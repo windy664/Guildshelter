@@ -1,0 +1,47 @@
+// 根工程 = 父配置容器。实际产物在各子模块（PLAN_MODULES.md）。
+// 公共仓库/编码/工具链下沉到 subprojects；各模块按需声明自己的插件与依赖。
+
+// 在 root 用 apply false 声明所有项目插件 → 把它们加载进 root（父）类加载器，子项目应用时共享同一份类。
+// 这是多模块的标准做法，且关键修复了 NeoGradle 的 'settings' 扩展冲突：否则两个 userdev 子项目各自独立
+// 加载 NeoGradle，IdeaExtPlugin.class 不是同一个 → Gradle 认不出"已应用" → 向 root 重复注册 settings 冲突。
+plugins {
+    id 'net.neoforged.gradle.userdev' apply false
+    id 'com.gradleup.shadow' apply false
+}
+
+subprojects {
+    apply plugin: 'java-library'
+
+    group = rootProject.findProperty('mod_group_id') ?: 'org.windy'
+    version = rootProject.findProperty('mod_version') ?: '1.0.1-SNAPSHOT'
+
+    repositories {
+        mavenCentral()
+        // JitPack 放最前 + 只服务 com.github.*：这样 GitHub 系依赖（Iris/Vault/DecentHolograms）只走 JitPack，
+        // 不会被 neoforged 等仓库逐一探测——避免某个仓库网络 reset 把 com.github 解析整个拖垮（曾因此 Iris 解析失败）。
+        maven {
+            url 'https://jitpack.io'
+            content { includeGroupByRegex 'com\\.github\\..*' }
+        }
+        maven { url 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+        maven { url 'https://repo.extendedclip.com/content/repositories/placeholderapi/' }
+        maven { url 'https://maven.neoforged.net/releases' }
+        maven { url 'https://maven.creeperhost.net' }
+        // Modrinth Maven：WorldEdit 等模组/插件按版本 ID 直接拉
+        maven {
+            url 'https://api.modrinth.com/maven'
+            content { includeGroup 'maven.modrinth' }
+        }
+        // EngineHub Maven：WorldEdit Bukkit 平台 API（artifactId 独立，不与 Modrinth 的 mod 版冲突）
+        maven {
+            url 'https://maven.enginehub.org/repo/'
+            content { includeGroup 'com.sk89q.worldedit' }
+        }
+    }
+
+    java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+    }
+}

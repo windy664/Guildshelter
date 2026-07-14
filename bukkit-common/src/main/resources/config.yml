@@ -1,0 +1,322 @@
+# GuildShelter 配置
+# 语言设置: zh_CN(中文) / en_US(英文)，语言文件在 plugins/GuildShelter/messages_*.yml
+language: zh_CN
+
+# 代理模式: none(单服) | bungeecord(BungeeCord 代理) | velocity(Velocity 代理)
+# 设为 bungeecord/velocity 时：
+#   - storage.type 自动强制 mysql（多服共享数据）
+#   - /gs visit 和 /gs home 支持跨服传送
+#   - 需在代理端配置 forwarding mode
+proxy: none
+
+# 本服务器名称（跨服模式必填，每台服不同，如 "survival" / "creative"）
+# 用于标识公会营地在哪台服务器上，代理跨服传送时使用
+server-name: ""
+
+# 每日维护费（从公会资金扣除，余额不足广播警告）
+upkeep:
+  enabled: false          # 是否启用每日维护费
+  base-cost: 100          # 基础费用（1 级公会）
+  per-level-cost: 50      # 每级加收
+  check-hour: 0           # 每天几点执行（0-23，服务器时间）
+
+# 单位说明：chunk = 16 方块；cell(格) = 一块庄园 + 一条路（网格的基本单元）
+
+# ========================= 常用设置（你通常只需要改这里）=========================
+
+# 【等级系统已独立到 levels.yml】——庄园等级、公会等级、主城额度都在那里配置。
+# 成员庄园采用【额度 + 自由解锁】：庄园等级决定解锁额度上限，玩家 /gs unlock 解锁脚下相邻 chunk
+# （不能飞地、形状自由），/gs upgrade 升级只抬高额度上限、不自动整地。主城同理，但额度跟公会等级、
+# 只有会长/副会长能解锁。
+
+# 道路宽度（路面顶层会自动铺成路面块，并清掉路上的植被/树/竹子；terrain-prep=NONE 时不铺）
+road-chunks: 1          # = 16 方块
+# 陆地路面方块（命名空间 id，支持模组方块；默认土径）。例: minecraft:stone_bricks / minecraft:dirt_path
+road-surface-block: minecraft:dirt_path
+# 水面桥（路穿过水面那段架的栈桥）：桥面 + 护栏，可分别自定义。
+#   auto = 按群系自动选木（针叶林→云杉、丛林→丛林木、其余→橡木，护栏同理）。
+road-bridge-block: auto        # 桥面块，如 minecraft:oak_planks
+road-bridge-rail-block: auto   # 桥边护栏块，如 minecraft:oak_fence
+# 道路是否允许【假玩家】(模组部署器/机械臂/采石场假人等非真实在线玩家)破坏/放置。
+# 默认 false：防止玩家用自动化设备拆掉/占用公共道路。仅约束【道路】——玩家在自己庄园/主城里的自动化照常不受影响。
+# (该限制走 NeoForge 侧保护；纯 Bukkit 端道路本就对所有人禁建，无需此项。)
+road-allow-fake-players: false
+
+# 惰性铺路节流（仅 Iris 等惰性世界：路随区块自然生成时按需铺，不预生成整片世界）。
+# 所有待铺区块进一个【全局队列】，由【单个常驻 worker】每 interval-ticks 取一批铺好，
+# 同一 tick 内多区块的客户端重发 + 重光照【合并成一次】，避免玩家快速探索时一 tick 几十次提交把 tick 顶满。
+# 路不必在区块加载那一刻立刻出现，延后几 tick 玩家几乎无感；想更省就调大 interval-ticks / 调小 columns-per-tick。
+road-pave:
+  columns-per-tick: 512   # 每次 worker 运行最多铺多少【列】(跨区块累计；一个区块=256 列)。越小越平滑、铺得越慢。
+  budget-ms: 5            # 每次运行在铺路上花的墙钟上限(毫秒)，到点立刻停、下次续。硬性防卡帧(50ms tick 预算里只占 5ms)。
+  interval-ticks: 2       # 每隔几 tick 跑一次铺路 worker。越大越省 CPU、路出现越慢(2 tick≈0.1s)。
+
+# 海洋换种子重建：首建公会营地时，若主城网格区域水占比过高，自动换随机种子重建，
+# 直到拿到陆地为主的世界。避免世界开在整片海洋——那样铺路会架成千上万列水面桥，
+# 压垮混合端的区块/光照子系统导致崩服。仅对自然地形(非 VOID/FLAT)、且世界首次创建时生效；
+# 卸载后重载已存档世界绝不触发（不会动玩家建筑）。
+ocean-reseed:
+  enabled: true            # 关掉则沿用旧行为（只锚定主城中心，整片网格仍可能泡海）
+  max-water-ratio: 0.5     # 主城区域水占比超过此值(0~1)就换种子重建
+  max-attempts: 8          # 最多重建次数，超过则接受最后一个并告警
+  sample-grid: 12          # 主城区域上的采样网格边数(12 → 12×12=144 个探点)
+
+# 主城围墙：沿主城整格 footprint(=中心一格)外缘建一圈墙。
+# 注意：主城独占中心一格、四面环路，墙贴路的边会自动留口，所以默认【关闭】；想要可设 enabled: true，
+# 并用 /gs admin citywall <公会> 给已建好的公会补建。
+city-wall:
+  enabled: false                      # 默认关；开了会把主城整格 footprint 四边围起来
+  block: minecraft:cobblestone_wall   # 围墙方块，如 minecraft:oak_fence / minecraft:stone_brick_wall
+  height: 1                           # 墙高（格）
+
+# 分配/升级庄园时的整地方式: NONE(不整) | CLEAR_VEGETATION(清植被,保留起伏) | FLATTEN(铺平)
+terrain-prep: CLEAR_VEGETATION
+
+# 安全落点：/gs home、/gs spawn 等传送落点若地表是水/岩浆，在那格铺一格"落脚台"防落水。
+safe-landing:
+  water-pad-block: minecraft:glass   # 落脚台方块（如 minecraft:glass）；填 none 或留空 = 关闭，不铺台
+
+# 虚空(空岛)世界：用 /gs admin create <公会> VOID 创建的世界没有自然地表，按【空岛】处理——不铺路，
+# 每个庄园在锚定角给一块地基（玩家 /gs home 正好落在岛上）。两种方式二选一：
+#   1) 填 schematic：每个庄园贴这个 WorldEdit 模板（需装 WorldEdit/FAWE，模板放在 plugins/GuildShelter/schematics/）。
+#   2) 留空 schematic：铺一块 platform-block 的方形平台（边长 = 2*platform-radius + 1）。
+void-island:
+  schematic: ""                      # 空岛模板名（不含扩展名）；留空 = 用下面的默认平台
+  platform-block: minecraft:grass_block  # 默认平台方块
+  platform-radius: 2                 # 默认平台半径（格）：2 = 5×5 平台
+
+# Iris 地形引擎联动（强烈推荐）：
+#   检测到服务器装了 Iris 插件 → 公会自然世界改用 Iris 生成，专业大地形 + 性能强出几百倍。
+#   没装 Iris → 退回普通 vanilla normal 世界。
+# 软依赖，无需把 Iris 作为前置；装了就自动用，没装也能跑。
+# ⚠️ Iris 地形可能很崎岖，铺路/整地仍按实际地表施工，落差大处道路会切坡 —— 按需调 terrain-prep / road-chunks。
+iris:
+  enabled: true            # Iris 在场时是否启用（false=即使装了 Iris 也用普通地形）
+  dimension: overworld     # 用哪个 Iris 维度包名（Iris 自带 overworld；装了其它包填包名）
+  broadcast-world-creation: true  # 用 Iris 建公会世界时，向全服广播"世界正在诞生/已完成"（顺带提醒服务器可能短暂卡顿）
+  unload-spawn: true       # 建好世界后关闭出生区(0,0)区块常驻(SPAWN_CHUNK_RADIUS=0)。每公会世界没人守出生点，
+                           # 玩家都传送到自己庄园，常驻出生区只白占内存+空转 tick。关掉它省资源；想保留出生区常驻设 false。
+                           # 注:不影响那 3 分钟建世界耗时(那是 Iris 生成出生区，本项只是事后让它可卸载)。
+
+# 公会领地迎送词（借鉴 HuskTowns greeting/farewell）：进入/离开某公会世界时弹欢迎/告别。
+# 文案优先用该公会会长自定义（后续 /gs greeting|farewell，存在主城 flag 的 greeting/farewell 键），未设则用下面默认模板。
+# 占位符 %guild%（公会名）、%player%（玩家名）。mode: title(屏幕中央大字) | chat(聊天行)。
+greeting:
+  enabled: true
+  mode: title              # title | chat
+  fade-in: 10              # title 渐入(tick)；mode=chat 时忽略
+  stay: 40                 # title 停留(tick)
+  fade-out: 10             # title 渐出(tick)
+  default-greeting: "&a欢迎来到 &e%guild% &a的领地"
+  default-farewell: "&7您已离开 &e%guild% &7的领地"
+
+# 领地操作审计日志（借鉴 HuskTowns town logs）：记录"谁在何时对哪个公会做了什么"（建会/分配庄园/解锁区块/
+# 升级/解散等），会长 /gs log 查本会、管理员 /gs admin log <公会> 查任意。写入走后台线程不卡主线程。
+audit:
+  enabled: true
+  retention-days: 30        # 超过此天数的旧记录每天自动清理一次（防表无限膨胀）
+
+# 存储后端：sqlite(默认,单文件免配置) | mysql(多服共享) | flatfile(不用数据库,纯文本文件)
+storage:
+  type: sqlite
+  # 仅 type=mysql 时用：
+  mysql:
+    host: localhost
+    port: 3306
+    database: guildshelter
+    user: root
+    password: ""
+
+# 领地保护：开启后非授权者不能在公会营地破坏/放置/交互/倒水。
+# 规则：非本公会成员全禁；主城仅会长/副会长/受信任成员且在【已解锁】城地可动(未解锁城地=保护中)；路任何人不可动；庄园仅庄主且在实占范围内可动。
+# OP 与持 guildshelter.admin 权限者一律放行。
+protection: true
+
+# 主城禁放方块：公会主城是【公共建设用地】，默认禁止放置下列方块，防止玩家把主城改成
+# 生产/红石工厂/刷怪农场用地（即便他有建造权也挡）。仅约束【主城放置】——玩家自己庄园不受限。
+# 写命名空间 id（支持模组方块）；留空 [] = 不限制。OP / guildshelter.admin 不受限（方便布景）。
+# 模组方块走 NeoForge 侧拦截（混合端），原版方块两端都拦。
+# 支持【正则】：含正则元字符的条目按正则整串匹配（大小写不敏感），如 "create:.*"=所有Create方块、".*_shulker_box"=所有潜影盒。
+main-city-blocked-blocks:
+  # —— 原版：自动化/红石/刷怪类 ——
+  - minecraft:hopper
+  - minecraft:dropper
+  - minecraft:dispenser
+  - minecraft:piston
+  - minecraft:sticky_piston
+  - minecraft:observer
+  - minecraft:spawner
+  - minecraft:tnt
+  # —— 模组方块示例（按你服装的模组改/增删；下面几行默认注释掉）——
+  # - create:mechanical_drill
+  # - create:mechanical_press
+  # - create:basin
+  # - mekanism:metallurgic_infuser
+  # - thermal:machine_pulverizer
+  # - industrialforegoing:laser_drill
+
+# 限时路权禁放方块：限时路权（/gs admin roadpermit，让指定玩家限时在某营地【路】上施工）只用于【修路】，
+# 默认禁止持权玩家在路上放下列方块，防止把公共道路改成生产/仓储/农场用地（即便持路权也挡）。
+# 仅约束【未合并的路】——玩家自己庄园、并入庄园的路都不受限。写命名空间 id（支持模组方块）；留空 [] = 不限制。
+# OP / guildshelter.admin 不受限。模组方块走 NeoForge 侧拦截（混合端），原版方块两端都拦。
+# 支持【正则】：含正则元字符的条目按正则整串匹配（大小写不敏感），如 ".*hopper"、"create:.*"。与主城名单【相互独立】，各配各的。
+road-permit:
+  blocked-blocks:
+    # —— 仓储/自动化/红石/刷怪类 ——
+    - minecraft:chest
+    - minecraft:trapped_chest
+    - minecraft:barrel
+    - minecraft:hopper
+    - minecraft:dropper
+    - minecraft:dispenser
+    - minecraft:furnace
+    - minecraft:blast_furnace
+    - minecraft:smoker
+    - minecraft:piston
+    - minecraft:sticky_piston
+    - minecraft:observer
+    - minecraft:spawner
+    # —— 农业/生产类（防把路改成农田/养蜂场等）——
+    - minecraft:farmland
+    - minecraft:composter
+    - minecraft:beehive
+    # —— 模组方块示例（按需取消注释）——
+    # - create:mechanical_drill
+    # - mekanism:metallurgic_infuser
+
+# 主城实体/掉落物限额：主城不像庄园按等级配额，这里给全公会主城一组【固定上限】，
+# 防止公共主城被掉落物/生物/方块实体堆爆。范围=整个主城 footprint。-1=该项不限。
+# 掉落物清理沿用 performance.drop-cleanup.mode（clean=超限清最旧 / block=只拦新放置）。
+main-city-limits:
+  enabled: false             # 默认关；开了才生效
+  max-dropped-items: 300     # 主城掉落物上限
+  max-tile-entities: 1500    # 主城方块实体(箱子/熔炉/告示牌…)总数上限，超限拦新放置
+  max-animals: -1            # 主城被动动物上限
+  max-hostiles: -1           # 主城敌对生物上限
+  max-mobs: -1               # 主城生物总数(动物+敌对+其它)上限
+  max-vehicles: -1           # 主城载具(船/矿车)上限
+
+# 主城悬浮字（需安装 DecentHolograms 插件，软依赖；没装则本功能静默关闭）。
+# 会长/副会长站在主城内用 /gs holo add <文字> 创建公告/欢迎语；数量按公会封顶。
+# 多行：文字里用 | 分隔，如 /gs holo add §6公会公告|§f今晚活动 8 点
+main-city-holograms:
+  enabled: true              # 是否启用（还需 DecentHolograms 在场才真正生效）
+  max-per-guild: 5           # 每公会主城悬浮字数量上限
+  # PAPI 变量白名单：悬浮字文本里允许出现的 %占位符%（DecentHolograms 会按观看者解析 PAPI，
+  # 不限制的话会长可借某些 PAPI 扩展泄露敏感信息/触发副作用——"PAPI 漏洞悬浮字攻击"）。
+  # 每条按【字面或正则】匹配占位符名（大小写不敏感，正则需整串匹配，与禁放方块名单同款）。
+  # 文本里出现【不在白名单】的占位符 → 拒绝创建并指出违规变量。留空 [] = 不允许任何 PAPI 占位符（最严）。
+  # 例：guildshelter_.* 放行本插件全部变量；player_name 精确放行；vault_eco_balance 放行余额。
+  papi-whitelist:
+    - "guildshelter_.*"       # 本插件自有变量（公会名/等级/庄园信息等）
+    - "player_name"
+    - "player_displayname"
+    - "server_name"
+
+# 主城子地块（借鉴 HuskTowns plot）：会长把【已解锁】的主城地圈成命名小块，指派给会内成员开店/摆摊。
+# 与解锁制正交——只是把已解锁主城地的【建造权委托】给某成员，不改变领地归属；被指派者退会自动转未指派。
+# /gs cityplot define <名>（脚下单个 chunk，须在主城且已解锁）/ assign <名> <玩家> / unassign <名> / remove <名> / list
+city-plots:
+  enabled: true
+  max-per-guild: 16          # 每公会主城子地块数量上限
+
+# 共享农场（标记）：把某成员庄园 或 主城 挂上 members-farm flag = 标记这片为"共享农场"。
+#   · 庄园：庄主 /gs flag set members-farm true（站自己庄园里）
+#   · 主城：会长/副会长 /gs flag set members-farm true（站主城里）
+# 标记本身由核心提供;真正的农场玩法（谁能种收/生长加速/偷菜）由【附属插件 GuildShelterFarm】实现，
+# farm-blocks 名单/加速倍率/偷菜规则等都在那个附属的 config 里配置。不装附属则 members-farm 仅为一个标记位。
+
+# ===================== 公会插件适配（按你服务器实际装的插件）=====================
+# 支持 PlayerGuild / LegendaryGuild。
+guild-hooks:
+  # true = 入会事件发现公会营地不存在时自动创建世界并分配庄园（旧行为）
+  # false = 不自动建世界；会长/副会长手动执行 /gs createcamp 后再分配庄园
+  auto-create-camp: false
+
+# ============================ 性能优化 ============================
+
+performance:
+  # 【庄园等级的优化限制（掉落物/方块实体/生物/载具/机器）已移到 levels.yml 的 manor.limits】——
+  #   那里按"几级 → 多少"明确配置；管理员还能 /gs admin limit 给单个庄园加增量。
+  # 这里只放与等级无关的【清理任务参数】和其它性能开关。
+
+  # 掉落物定时清理任务（上限由 levels.yml manor.limits 的 drops 决定）：
+  drop-cleanup:
+    check-interval-seconds: 60   # 定时检查频率（秒）
+    mode: clean                  # clean=清理最旧+拦截新 | block=只拦截新（不删存量）
+
+  # 世界级懒加载/卸载
+  optimize:
+    enabled: false
+    mode: world                   # world=卸载整个世界 | chunk=只卸载非主城chunk
+    inactive-minutes: 30          # 无玩家超过N分钟才卸载
+    check-interval-seconds: 300   # 检查频率（5分钟）
+    keep-spawn-loaded: true       # 主城出生点chunk永不卸载
+
+  # 性能统计 + 排行广播
+  stats:
+    enabled: false
+    broadcast-interval-seconds: 1800  # 30分钟广播一次
+    top-count: 5                      # 显示前N名
+    weights:
+      tile-tick: 0.005              # 每个方块实体的tick权重
+      entity-tick: 0.005            # 每个生物的tick权重
+      drop-tick: 0.0001             # 每个掉落物的tick权重
+      chunk-tick: 0                 # 每个chunk的tick权重
+
+  # 庄园级区块卸载
+  chunk-unload:
+    enabled: false
+    inactive-minutes: 15          # 庄园主人不在线超过N分钟卸载
+    check-interval-seconds: 120   # 检查频率
+    keep-road-loaded: true        # 道路chunk不卸载
+
+# ============================ 搬家系统 ============================
+
+# 搬家：玩家跳槽公会时，把庄园建筑从旧公会营地复制到新公会营地。
+# chunk 级复制，TileEntity NBT 完整保留（AE2 存储盘/ME 网络等模组数据安全）。
+manor-move:
+  enabled: true            # 是否启用搬家功能
+  cost: 10000              # 搬家费用（需 Vault 经济插件，0=免费）
+  cooldown-days: 7         # 搬家冷却天数（防止频繁搬家）
+
+# ====================== 庄园升级命令回调 ======================
+
+# 庄园升到「对应等级」时，由控制台执行「对应命令」（管理员 /gs admin upgrade-manor 触发）。
+# 只执行升到的那一级配的命令（不累加更低等级）。命令以控制台身份执行，故 give/cmi/lp 等任意插件命令均可挂接。
+# 占位符: %player%(庄主名) %uuid% %guild%(公会ID) %level%(新等级) %old_level%(旧等级) %slot%
+manor-upgrade-commands:
+  enabled: false           # 默认关；要用改 true 并按需配置下方 levels
+  levels:                  # 键 = 升到的目标等级，值 = 该等级要执行的命令列表（不带前导 /）
+    2:
+      - "broadcast §a%player% §f的庄园升到了 §e2 §f级！"
+    3:
+      - "give %player% diamond 8"
+    5:
+      - "lp user %player% parent add manor-vip"
+
+# ====================== 多庄园（一人多块）======================
+
+# 默认每个公会成员自动分配一块庄园。开启后玩家可用 /gs claim 认领更多块，
+# 数量上限 = 权限节点 guildshelter.manors.<N> 与 default-limit 的较大者；
+# guildshelter.manors.unlimited = 无限。多数玩家命令将作用于"脚下站的这块"。
+multi-manor:
+  enabled: false           # 默认关；关=保持一人一庄园旧行为（安全灰度）
+  default-limit: 1         # 无权限节点时每人可拥有的庄园数
+  max-probe: 64            # 权限节点 guildshelter.manors.<N> 向上探测上限（防遍历过大）
+  claim-cost: 0            # 自助认领花费（需 Vault，0=免费）
+
+# ============================== UI 后端 ==============================
+
+# 菜单渲染后端（GUI 入口尚在开发中，暂不影响现有命令）：
+#   auto    - 自动：配套 UI 模组就绪则用模组联动，否则回退原版 Inventory
+#   vanilla - 强制原版 Inventory 胸 GUI（兼容性最好）
+#   mod     - 强制模组联动自定义界面（模组未就绪时无法打开菜单）
+# 说明：菜单数据模型平台中立，易变的 Inventory API 已隔离，后续模组联动 UI 走通道下发。
+ui:
+  backend: auto
+
+# ============================ 高级（一般不用动）============================
+advanced:
+  base-y: 64            # 地面高度
+  margin-chunks: 2      # 世界边界在已分配范围外额外留的余量 = 32 方块

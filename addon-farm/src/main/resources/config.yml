@@ -1,0 +1,46 @@
+# GuildShelterFarm 配置
+# 全部只在 GuildShelter 的【共享农场区】(挂了 members-farm flag 的庄园/主城) 内生效。
+# members-farm 标记由主插件提供：庄主 /gs flag set members-farm true（站庄园）；会长（站主城）同理。
+
+# 哪些方块算"农事方块"（按字面或正则匹配命名空间 id，支持模组作物如 farmersdelight:.*）。
+# 用于：① 共享农场放行成员种/收 ② 偷菜可偷的对象。
+farm-blocks:
+  - "minecraft:wheat"
+  - "minecraft:carrots"
+  - "minecraft:potatoes"
+  - "minecraft:beetroots"
+  - "minecraft:melon_stem"
+  - "minecraft:pumpkin_stem"
+  - "minecraft:melon"
+  - "minecraft:pumpkin"
+  - "minecraft:cocoa"
+  - "minecraft:sugar_cane"
+  - "minecraft:bamboo"
+  - "minecraft:nether_wart"
+  - "minecraft:sweet_berry_bush"
+  - "minecraft:farmland"
+  - "minecraft:composter"
+  - "minecraft:.*_sapling"
+
+# A1 共享农场：会内【成员】可在农场区种/收上面的农事方块（不止庄主/受信成员）。
+share:
+  enabled: true
+  allow-containers: true       # 连带放行开容器（堆肥桶/箱子等，方便存取收成）
+
+# A2 生长加速：农场区作物生长/幼崽成长随【公会等级】加速。
+growth:
+  enabled: true
+  crop-multiplier-per-level: 0.08   # 作物：每级 +8% 额外推进一阶的概率
+  crop-max-extra-chance: 0.6        # 概率上限
+  breed-enabled: true               # 幼崽加速成年
+  breed-multiplier-per-level: 0.08
+  breed-max-extra-chance: 0.6
+  breed-bump-ticks: 2400            # 命中时幼崽成长额外推进的 tick
+
+# 偷菜：【非本公会成员】可在共享农场区偷收【成熟】作物（像 QQ 农场偷菜）。
+# 经 BuildCheckProvider 放行其破坏成熟作物 → 作物正常掉落归小偷；每人每日有偷取上限。
+steal:
+  enabled: true
+  daily-limit: 32              # 每个小偷每天最多偷多少次（按"成功收割成熟作物"计）；-1=不限
+  only-mature: true            # 只能偷【成熟】作物（未成熟的偷不了，防铲苗）
+  notify-owner: true           # 偷菜时通知在线的园主/公会成员（暂用聊天提示在场成员）

@@ -1,0 +1,248 @@
+package org.windy.guildshelter.persistence;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+
+/** MySQL 方言：VARCHAR/BIGINT/INT 列，{@code ON DUPLICATE KEY UPDATE} upsert；命名锁防多实例并发迁移。 */
+public final class MysqlDialect implements SqlDialect {
+
+    /** 命名锁名（同一库的所有实例共用，串行化迁移）。 */
+    private static final String MIGRATE_LOCK = "guildshelter_schema_migrate";
+
+    @Override
+    public List<String> preSchemaStatements() {
+        return List.of();
+    }
+
+    /** GET_LOCK 命名锁：多个 Bukkit 服共享同一 MySQL 时，只有一个能进迁移；其余等待最多 60s。 */
+    @Override
+    public boolean acquireMigrationLock(Connection c) throws SQLException {
+        try (Statement st = c.createStatement();
+             ResultSet rs = st.executeQuery("SELECT GET_LOCK('" + MIGRATE_LOCK + "', 60)")) {
+            return rs.next() && rs.getInt(1) == 1; // 1=获得，0=超时未获得，NULL=出错
+        }
+    }
+
+    @Override
+    public void releaseMigrationLock(Connection c) throws SQLException {
+        try (Statement st = c.createStatement()) {
+            st.executeQuery("SELECT RELEASE_LOCK('" + MIGRATE_LOCK + "')");
+        }
+    }
+
+    @Override
+    public List<String> schemaStatements() {
+        return List.of(
+                """
+                CREATE TABLE IF NOT EXISTS guild_world (
+                    guild_id        VARCHAR(255) PRIMARY KEY,
+                    world_name      VARCHAR(255) NOT NULL,
+                    seed            BIGINT NOT NULL,
+                    origin_x        INT NOT NULL,
+                    origin_z        INT NOT NULL,
+                    guild_level     INT NOT NULL,
+                    allocated_slots INT NOT NULL,
+                    layout_params   TEXT
+                )""",
+                // 老库迁移：列已存在会抛错，由 JdbcDatabase 吞掉。
+                "ALTER TABLE guild_world ADD COLUMN layout_params TEXT",
+                "ALTER TABLE guild_world ADD COLUMN funds DOUBLE DEFAULT 0",
+                "ALTER TABLE guild_world ADD COLUMN bulletin TEXT DEFAULT ''",
+                "ALTER TABLE guild_world ADD COLUMN terrain_mode VARCHAR(32) DEFAULT 'CLEAR_VEGETATION'",
+                "ALTER TABLE guild_world ADD COLUMN server_name VARCHAR(255) DEFAULT ''",
+                "ALTER TABLE guild_world ADD COLUMN city_unlocked TEXT", // 主城已解锁 chunk 集合(packed int CSV)
+                "ALTER TABLE guild_world ADD COLUMN city_quota INT DEFAULT -1", // 主城额度覆盖(-1=按等级)
+                """
+                CREATE TABLE IF NOT EXISTS manor (
+                    guild_id   VARCHAR(255) NOT NULL,
+                    slot       INT NOT NULL,
+                    owner_uuid VARCHAR(36) NOT NULL,
+                    level      INT NOT NULL,
+                    flags      TEXT,
+                    PRIMARY KEY (guild_id, slot),
+                    INDEX idx_manor_owner (guild_id, owner_uuid)
+                )""",
+                "ALTER TABLE manor ADD COLUMN flags TEXT", // 迁移:列已存在会被吞掉
+                "ALTER TABLE manor ADD COLUMN unlocked_chunks TEXT", // 已解锁 chunk 集合(packed int CSV)
+                """
+                CREATE TABLE IF NOT EXISTS manor_cobuilder (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (guild_id, slot, player_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_member (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (guild_id, slot, player_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_denied (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (guild_id, slot, player_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_rating (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    rater_uuid  VARCHAR(36) NOT NULL,
+                    score       INT NOT NULL,
+                    PRIMARY KEY (guild_id, slot, rater_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_comment (
+                    id          INT AUTO_INCREMENT PRIMARY KEY,
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    author_uuid VARCHAR(36) NOT NULL,
+                    message     TEXT NOT NULL,
+                    created_at  BIGINT NOT NULL
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_merge (
+                    guild_id      VARCHAR(255) NOT NULL,
+                    primary_slot  INT NOT NULL,
+                    absorbed_slot INT NOT NULL,
+                    PRIMARY KEY (guild_id, primary_slot, absorbed_slot)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_template (
+                    guild_id VARCHAR(255) NOT NULL,
+                    name     VARCHAR(255) NOT NULL,
+                    flags    TEXT NOT NULL,
+                    PRIMARY KEY (guild_id, name)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_sub (
+                    guild_id VARCHAR(255) NOT NULL,
+                    slot     INT NOT NULL,
+                    name     VARCHAR(255) NOT NULL,
+                    min_x    INT NOT NULL,
+                    min_z    INT NOT NULL,
+                    max_x    INT NOT NULL,
+                    max_z    INT NOT NULL,
+                    flags    TEXT NOT NULL,
+                    PRIMARY KEY (guild_id, slot, name)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_visit (
+                    guild_id   VARCHAR(255) NOT NULL,
+                    slot       INT NOT NULL,
+                    visit_count INT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (guild_id, slot)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_flower (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    slot        INT NOT NULL,
+                    sender_uuid VARCHAR(36) NOT NULL,
+                    sent_date   VARCHAR(10) NOT NULL,
+                    PRIMARY KEY (guild_id, slot, sender_uuid, sent_date)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS manor_move_record (
+                    player_uuid VARCHAR(36) PRIMARY KEY,
+                    last_move_at BIGINT NOT NULL
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS guild_city_trust (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    PRIMARY KEY (guild_id, player_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS road_permit (
+                    guild_id    VARCHAR(255) NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    expire_at   BIGINT NOT NULL,
+                    PRIMARY KEY (guild_id, player_uuid)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS guild_spawn (
+                    guild_id   VARCHAR(255) NOT NULL,
+                    spawn_type VARCHAR(16) NOT NULL,
+                    x          DOUBLE NOT NULL,
+                    y          DOUBLE NOT NULL,
+                    z          DOUBLE NOT NULL,
+                    yaw        FLOAT NOT NULL,
+                    pitch      FLOAT NOT NULL,
+                    PRIMARY KEY (guild_id, spawn_type)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS guild_city_flag (
+                    guild_id VARCHAR(255) NOT NULL,
+                    flag_id  VARCHAR(64) NOT NULL,
+                    value    TEXT NOT NULL,
+                    PRIMARY KEY (guild_id, flag_id)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS guild_hologram (
+                    id       INT AUTO_INCREMENT PRIMARY KEY,
+                    guild_id VARCHAR(255) NOT NULL,
+                    name     VARCHAR(128) NOT NULL UNIQUE,
+                    label    TEXT NOT NULL,
+                    INDEX idx_hologram_guild (guild_id)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS gs_audit (
+                    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    ts         BIGINT NOT NULL,
+                    guild_id   VARCHAR(255) NOT NULL,
+                    actor_uuid VARCHAR(36),
+                    action     VARCHAR(64) NOT NULL,
+                    target     VARCHAR(255),
+                    detail     TEXT,
+                    INDEX idx_audit_guild_ts (guild_id, ts)
+                )""",
+                """
+                CREATE TABLE IF NOT EXISTS city_plot (
+                    guild_id      VARCHAR(255) NOT NULL,
+                    name          VARCHAR(255) NOT NULL,
+                    min_cx        INT NOT NULL,
+                    min_cz        INT NOT NULL,
+                    max_cx        INT NOT NULL,
+                    max_cz        INT NOT NULL,
+                    assignee_uuid VARCHAR(36),
+                    PRIMARY KEY (guild_id, name)
+                )""");
+    }
+
+    @Override
+    public String upsertGuildWorld() {
+        return """
+                INSERT INTO guild_world(guild_id, world_name, seed, origin_x, origin_z, guild_level, allocated_slots, layout_params, funds, bulletin, terrain_mode, server_name, city_unlocked, city_quota)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ON DUPLICATE KEY UPDATE
+                    world_name=VALUES(world_name),
+                    seed=VALUES(seed),
+                    origin_x=VALUES(origin_x),
+                    origin_z=VALUES(origin_z),
+                    guild_level=VALUES(guild_level),
+                    allocated_slots=VALUES(allocated_slots),
+                    layout_params=VALUES(layout_params),
+                    funds=VALUES(funds),
+                    bulletin=VALUES(bulletin),
+                    terrain_mode=VALUES(terrain_mode),
+                    server_name=VALUES(server_name),
+                    city_unlocked=VALUES(city_unlocked),
+                    city_quota=VALUES(city_quota)""";
+    }
+
+    @Override
+    public String upsertManor() {
+        return """
+                INSERT INTO manor(guild_id, slot, owner_uuid, level, flags, unlocked_chunks) VALUES(?,?,?,?,?,?)
+                ON DUPLICATE KEY UPDATE
+                    owner_uuid=VALUES(owner_uuid),
+                    level=VALUES(level),
+                    flags=VALUES(flags),
+                    unlocked_chunks=VALUES(unlocked_chunks)""";
+    }
+}

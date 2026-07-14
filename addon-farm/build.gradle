@@ -1,0 +1,20 @@
+// GuildShelterFarm：官方农场附属（共享农场访问 A1 + 生长加速 A2 + 偷菜）。
+// 独立 Bukkit 插件 jar。依赖全 compileOnly——guildshelter-api 由主插件 jar 运行期提供，【绝不 shade】。
+// 靠 只读 GuildShelterAPI + 注册 BuildCheckProvider（放行成员农事/偷菜）+ 监听原版事件（加速/偷菜计数）。
+
+base {
+    archivesName = 'guildshelter-farm'
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT'
+    compileOnly project(':guildshelter-api')   // 仅编译期；运行期由 GuildShelter 主插件 jar 提供这些类
+}
+
+processResources {
+    // 在配置期把版本捕获进局部变量；闭包在【执行期】不能再引用 project（配置缓存禁止）。
+    def ver = project.version.toString()
+    filesMatching('plugin.yml') {
+        expand(version: ver)
+    }
+}

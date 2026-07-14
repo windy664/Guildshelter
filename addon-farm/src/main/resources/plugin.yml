@@ -1,0 +1,7 @@
+name: GuildShelterFarm
+version: '${version}'
+main: org.windy.guildshelter.farm.FarmPlugin
+api-version: '1.21'
+author: windy
+description: GuildShelter 农场附属：共享农场（会内成员合种）+ 生长加速（随公会等级）+ 偷菜（官方样板附属）。
+depend: [GuildShelter]
