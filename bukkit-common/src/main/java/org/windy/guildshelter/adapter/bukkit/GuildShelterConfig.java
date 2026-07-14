@@ -8,7 +8,7 @@ import org.windy.guildshelter.persistence.StorageSettings;
 
 /** 把 Bukkit 的 config.yml 解析成 domain 的配置对象。 */
 public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, TerrainPrepMode terrainPrep,
-                                 StorageSettings storage, String proxyType, String serverName,
+                                 StorageSettings storage, boolean crossServer, String serverName,
                                  PerformanceConfig performance, MoveConfig move, OceanReseedConfig oceanReseed,
                                  IrisConfig iris,
                                  CityWallConfig cityWall, CityLimits cityLimits,
@@ -104,8 +104,9 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
     /**
      * @param cfg 主配置 config.yml
      * @param lv  等级系统配置 levels.yml（庄园/公会等级独立成文件）；读不到时回退 config.yml 旧键再回退硬默认。
+     * @param serverCfg 本服标识配置 server.yml（不随 jar 打包，首启按服务器目录名生成）。
      */
-    public static GuildShelterConfig from(FileConfiguration cfg, FileConfiguration lv) {
+    public static GuildShelterConfig from(FileConfiguration cfg, FileConfiguration lv, FileConfiguration serverCfg) {
         int plotInitial = lvl(lv, "manor.initial-chunks", cfg, "member-plot.initial-chunks", 6);
         int plotMax = lvl(lv, "manor.max-chunks", cfg, "member-plot.max-chunks", 15);
         int plotGrow = lvl(lv, "manor.grow-per-level", cfg, "member-plot.grow-per-level", 1);
@@ -161,12 +162,12 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
             prep = TerrainPrepMode.CLEAR_VEGETATION;
         }
 
-        String proxyType = cfg.getString("proxy", "none").toLowerCase();
-        String serverName = cfg.getString("server-name", "");
+        boolean crossServer = cfg.getBoolean("cross_server", false);
+        String serverName = serverCfg.getString("server-name", "");
 
         // 跨服模式强制 MySQL
         String storageType = cfg.getString("storage.type", "sqlite");
-        if (!proxyType.equals("none") && !storageType.equals("mysql")) {
+        if (crossServer && !storageType.equals("mysql")) {
             storageType = "mysql";
         }
 
@@ -274,6 +275,6 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cfg.getInt("main-city-holograms.max-per-guild", 5),
                 cfg.getStringList("main-city-holograms.papi-whitelist"));
 
-        return new GuildShelterConfig(layout, levels, prep, storage, proxyType, serverName, perf, move, oceanReseed, iris, cityWall, cityLimits, holograms);
+        return new GuildShelterConfig(layout, levels, prep, storage, crossServer, serverName, perf, move, oceanReseed, iris, cityWall, cityLimits, holograms);
     }
 }

@@ -3,7 +3,7 @@ package org.windy.guildshelter.adapter.bungee;
 import org.bukkit.entity.Player;
 
 /**
- * 代理跨服传送抽象：BungeeCord 和 Velocity 共用此接口。
+ * 代理跨服传送抽象。
  * 通过 PluginMessage 通道让代理把玩家送到指定服务器。
  */
 public interface ProxyChannel {
@@ -15,15 +15,11 @@ public interface ProxyChannel {
     boolean isAvailable();
 
     /**
-     * 按代理类型创建实例。
-     * @param proxyType "bungeecord" 或 "velocity"
+     * 按跨服开关创建实例。
+     * @param crossServer 是否启用代理跨服
      * @param plugin 插件实例（注册通道用）
      */
-    static ProxyChannel create(String proxyType, org.bukkit.plugin.Plugin plugin) {
-        return switch (proxyType.toLowerCase()) {
-            case "bungeecord" -> new BungeeCordChannel(plugin);
-            case "velocity" -> new VelocityChannel(plugin);
-            default -> new NoOpChannel();
-        };
+    static ProxyChannel create(boolean crossServer, org.bukkit.plugin.Plugin plugin) {
+        return crossServer ? new BungeeCordChannel(plugin) : new NoOpChannel();
     }
 }

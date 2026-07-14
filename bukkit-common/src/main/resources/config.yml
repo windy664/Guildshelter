@@ -2,16 +2,12 @@
 # 语言设置: zh_CN(中文) / en_US(英文)，语言文件在 plugins/GuildShelter/messages_*.yml
 language: zh_CN
 
-# 代理模式: none(单服) | bungeecord(BungeeCord 代理) | velocity(Velocity 代理)
-# 设为 bungeecord/velocity 时：
+# 跨服模式：false=单服；true=通过代理的 PluginMessage 通道跨服传送
+# 设为 true 时：
 #   - storage.type 自动强制 mysql（多服共享数据）
 #   - /gs visit 和 /gs home 支持跨服传送
-#   - 需在代理端配置 forwarding mode
-proxy: none
-
-# 本服务器名称（跨服模式必填，每台服不同，如 "survival" / "creative"）
-# 用于标识公会营地在哪台服务器上，代理跨服传送时使用
-server-name: ""
+#   - 本服标识在 server.yml 里配置，默认取服务器当前文件夹名
+cross_server: false
 
 # 每日维护费（从公会资金扣除，余额不足广播警告）
 upkeep:
@@ -22,34 +18,19 @@ upkeep:
 
 # 单位说明：chunk = 16 方块；cell(格) = 一块庄园 + 一条路（网格的基本单元）
 
-# ========================= 常用设置（你通常只需要改这里）=========================
-
-# 【等级系统已独立到 levels.yml】——庄园等级、公会等级、主城额度都在那里配置。
-# 成员庄园采用【额度 + 自由解锁】：庄园等级决定解锁额度上限，玩家 /gs unlock 解锁脚下相邻 chunk
-# （不能飞地、形状自由），/gs upgrade 升级只抬高额度上限、不自动整地。主城同理，但额度跟公会等级、
-# 只有会长/副会长能解锁。
 
 # 道路宽度（路面顶层会自动铺成路面块，并清掉路上的植被/树/竹子；terrain-prep=NONE 时不铺）
 road-chunks: 1          # = 16 方块
 # 陆地路面方块（命名空间 id，支持模组方块；默认土径）。例: minecraft:stone_bricks / minecraft:dirt_path
+
 road-surface-block: minecraft:dirt_path
 # 水面桥（路穿过水面那段架的栈桥）：桥面 + 护栏，可分别自定义。
 #   auto = 按群系自动选木（针叶林→云杉、丛林→丛林木、其余→橡木，护栏同理）。
 road-bridge-block: auto        # 桥面块，如 minecraft:oak_planks
 road-bridge-rail-block: auto   # 桥边护栏块，如 minecraft:oak_fence
-# 道路是否允许【假玩家】(模组部署器/机械臂/采石场假人等非真实在线玩家)破坏/放置。
-# 默认 false：防止玩家用自动化设备拆掉/占用公共道路。仅约束【道路】——玩家在自己庄园/主城里的自动化照常不受影响。
-# (该限制走 NeoForge 侧保护；纯 Bukkit 端道路本就对所有人禁建，无需此项。)
-road-allow-fake-players: false
 
-# 惰性铺路节流（仅 Iris 等惰性世界：路随区块自然生成时按需铺，不预生成整片世界）。
-# 所有待铺区块进一个【全局队列】，由【单个常驻 worker】每 interval-ticks 取一批铺好，
-# 同一 tick 内多区块的客户端重发 + 重光照【合并成一次】，避免玩家快速探索时一 tick 几十次提交把 tick 顶满。
-# 路不必在区块加载那一刻立刻出现，延后几 tick 玩家几乎无感；想更省就调大 interval-ticks / 调小 columns-per-tick。
-road-pave:
-  columns-per-tick: 512   # 每次 worker 运行最多铺多少【列】(跨区块累计；一个区块=256 列)。越小越平滑、铺得越慢。
-  budget-ms: 5            # 每次运行在铺路上花的墙钟上限(毫秒)，到点立刻停、下次续。硬性防卡帧(50ms tick 预算里只占 5ms)。
-  interval-ticks: 2       # 每隔几 tick 跑一次铺路 worker。越大越省 CPU、路出现越慢(2 tick≈0.1s)。
+# 道路是否允许【假玩家】(模组部署器/机械臂/采石场假人等非真实在线玩家)破坏/放置。
+road-allow-fake-players: false
 
 # 海洋换种子重建：首建公会营地时，若主城网格区域水占比过高，自动换随机种子重建，
 # 直到拿到陆地为主的世界。避免世界开在整片海洋——那样铺路会架成千上万列水面桥，
@@ -98,7 +79,7 @@ iris:
                            # 玩家都传送到自己庄园，常驻出生区只白占内存+空转 tick。关掉它省资源；想保留出生区常驻设 false。
                            # 注:不影响那 3 分钟建世界耗时(那是 Iris 生成出生区，本项只是事后让它可卸载)。
 
-# 公会领地迎送词（借鉴 HuskTowns greeting/farewell）：进入/离开某公会世界时弹欢迎/告别。
+# 公会领地迎送词
 # 文案优先用该公会会长自定义（后续 /gs greeting|farewell，存在主城 flag 的 greeting/farewell 键），未设则用下面默认模板。
 # 占位符 %guild%（公会名）、%player%（玩家名）。mode: title(屏幕中央大字) | chat(聊天行)。
 greeting:
@@ -107,10 +88,9 @@ greeting:
   fade-in: 10              # title 渐入(tick)；mode=chat 时忽略
   stay: 40                 # title 停留(tick)
   fade-out: 10             # title 渐出(tick)
-  default-greeting: "&a欢迎来到 &e%guild% &a的领地"
-  default-farewell: "&7您已离开 &e%guild% &7的领地"
+  default-greeting: "&a欢迎来到 &e%guild% &a的公会营地"
+  default-farewell: "&7您已离开 &e%guild% &7的公会营地"
 
-# 领地操作审计日志（借鉴 HuskTowns town logs）：记录"谁在何时对哪个公会做了什么"（建会/分配庄园/解锁区块/
 # 升级/解散等），会长 /gs log 查本会、管理员 /gs admin log <公会> 查任意。写入走后台线程不卡主线程。
 audit:
   enabled: true

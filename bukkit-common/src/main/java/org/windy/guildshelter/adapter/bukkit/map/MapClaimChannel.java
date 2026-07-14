@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  * 主城/庄园地皮在 <b>Xaero 世界地图</b>上的可视化 + 点击圈地的<b>服务端半</b>（协议见 PLAN_XAERO.md）。
  *
  * <p>通道 {@code guildshelter:map}（Bukkit 插件消息 = 自定义载荷，NeoForge 客户端 mod 注册同名 payload 即互通）。
- * 玩家进公会世界时下发 PLOTS（主城 + 自己的庄园 chunk，含已解锁/预留 + 颜色 + 标签）；客户端 mod 在地图上
+ * 玩家进公会世界时下发 PLOTS（主城 + 已分配庄园的已解锁 chunk，含颜色 + 标签）；客户端 mod 在地图上
  * 高亮并支持点击 → 回 CLAIM 包，本端按既有规则（归属/相邻/额度/会长权限）裁决后调 {@link GuildService} 解锁。
  *
  * <p><b>无客户端 mod 的玩家完全不受影响</b>：出站包没有监听端即被丢弃，入站永不发生，服务端逻辑照常。
@@ -49,14 +49,12 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
     // kind（与 PLAN_XAERO.md §3 对齐）
     private static final byte KIND_CITY_UNLOCKED = 0;
     private static final byte KIND_OWN_UNLOCKED = 1;
-    private static final byte KIND_OWN_RESERVED = 2;
-    private static final byte KIND_CITY_RESERVED = 6;
+    private static final byte KIND_OTHER_UNLOCKED = 2;
 
     // ARGB 颜色（半透明，便于叠在地图上）
     private static final int C_CITY = 0x80FFD24D;       // 金黄
-    private static final int C_CITY_RESV = 0x4DFFD24D;
     private static final int C_OWN = 0x8055FF55;        // 亮绿
-    private static final int C_OWN_RESV = 0x4D55FF55;
+    private static final int C_OTHER = 0x8055D7FF;      // 青蓝
 
     private final GuildWorldRegistry registry;
     private final GuildRepository guilds;
@@ -117,7 +115,7 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
         }
     }
 
-    // ===== 出站：PLOTS（主城 + 自己的庄园）=====
+    // ===== 出站：PLOTS（已占领 chunk）=====
 
     public void sendPlots(Player player, GuildWorld gw) {
         LayoutCalculator layout = new LayoutCalculator(gw.layout());
@@ -133,31 +131,30 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
             DataOutputStream eo = new DataOutputStream(entries);
             int count = 0;
 
-            // 主城整格 footprint：已解锁 / 预留
+            // 主城：只发已解锁 chunk。
             ChunkRegion city = layout.mainCityRegion();
             for (int dx = city.minChunkX(); dx <= city.maxChunkX(); dx++) {
                 for (int dz = city.minChunkZ(); dz <= city.maxChunkZ(); dz++) {
-                    boolean unlocked = gw.isCityUnlocked(dx, dz);
-                    writeEntry(eo, gw.originChunkX() + dx, gw.originChunkZ() + dz,
-                            unlocked ? C_CITY : C_CITY_RESV,
-                            unlocked ? KIND_CITY_UNLOCKED : KIND_CITY_RESERVED,
-                            "城");
-                    count++;
+                    if (gw.isCityUnlocked(dx, dz)) {
+                        writeEntry(eo, gw.originChunkX() + dx, gw.originChunkZ() + dz,
+                                C_CITY, KIND_CITY_UNLOCKED, "城");
+                        count++;
+                    }
                 }
             }
 
-            // 自己的庄园：每块的整格 plot，已解锁 / 预留
-            for (Manor manor : manors.findAllByOwner(gw.guild(), ref)) {
+            // 已分配庄园：只发已解锁 chunk。自己的庄园用绿色，其它成员庄园用青蓝。
+            for (Manor manor : manors.findAll(gw.guild())) {
                 ChunkRegion plot = layout.plotRegion(manor.slot());
-                for (int wx = plot.minChunkX(); wx <= plot.maxChunkX(); wx++) {
-                    for (int wz = plot.minChunkZ(); wz <= plot.maxChunkZ(); wz++) {
-                        boolean unlocked = manor.isUnlocked(wx - plot.minChunkX(), wz - plot.minChunkZ());
-                        writeEntry(eo, gw.originChunkX() + wx, gw.originChunkZ() + wz,
-                                unlocked ? C_OWN : C_OWN_RESV,
-                                unlocked ? KIND_OWN_UNLOCKED : KIND_OWN_RESERVED,
-                                "#" + manor.slot());
-                        count++;
-                    }
+                boolean own = manor.owner().equals(ref);
+                for (int packed : manor.unlockedChunks()) {
+                    int wx = plot.minChunkX() + Manor.unpackDx(packed);
+                    int wz = plot.minChunkZ() + Manor.unpackDz(packed);
+                    writeEntry(eo, gw.originChunkX() + wx, gw.originChunkZ() + wz,
+                            own ? C_OWN : C_OTHER,
+                            own ? KIND_OWN_UNLOCKED : KIND_OTHER_UNLOCKED,
+                            "#" + manor.slot());
+                    count++;
                 }
             }
 
@@ -233,7 +230,7 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
             GuildService.UnlockResult r = service.unlockChunk(gw.guild(), ref, worldChunkX, worldChunkZ);
             sendResult(player, r == GuildService.UnlockResult.SUCCESS, "map.claim_" + r.name().toLowerCase());
             if (r == GuildService.UnlockResult.SUCCESS) {
-                sendPlots(player, gw);
+                refreshGuild(gw);
             }
         } else if (c.isMainCity()) {
             if (!service.isGuildAdmin(ref, gw.guild()) && !player.isOp()) {
@@ -247,7 +244,7 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
             }
             sendResult(player, ok, "map.claim_" + service.lastCityUnlockResult().name().toLowerCase());
             if (ok) {
-                sendPlots(player, gw);
+                refreshGuild(updated);
             }
         } else {
             sendResult(player, false, "map.claim_not_claimable");

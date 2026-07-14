@@ -191,7 +191,8 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
 
         // 等级系统独立配置 levels.yml（首启释放默认文件，并从旧 config.yml 迁移已有等级配置）。
         org.bukkit.configuration.file.FileConfiguration levelsCfg = loadLevelsConfig();
-        GuildShelterConfig config = GuildShelterConfig.from(getConfig(), levelsCfg);
+        org.bukkit.configuration.file.FileConfiguration serverCfg = loadServerConfig();
+        GuildShelterConfig config = GuildShelterConfig.from(getConfig(), levelsCfg, serverCfg);
 
         // 存储后端按 config 选(sqlite/mysql/flatfile);领域只认端口仓库。
         this.storage = StorageFactory.create(config.storage(), getDataFolder().toPath(), config.layout());
@@ -199,10 +200,10 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         ManorRepository manors = storage.manors();
         getLogger().info("存储后端: " + config.storage().type());
 
-        // 代理跨服通道（BungeeCord / Velocity）
-        ProxyChannel proxyChannel = ProxyChannel.create(config.proxyType(), this);
+        // 代理跨服通道（PluginMessage）
+        ProxyChannel proxyChannel = ProxyChannel.create(config.crossServer(), this);
         if (proxyChannel.isAvailable()) {
-            getLogger().info("跨服代理: " + config.proxyType() + "（服务器名: " + config.serverName() + "）");
+            getLogger().info("跨服模式已启用（PluginMessage，服务器名: " + config.serverName() + "）");
         }
 
         this.worldManager = new WorldManager(config.levels(), config.oceanReseed(), config.iris(), getLogger());
@@ -227,12 +228,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         // 原始整地器（未套 Iris 预生成装饰器）：惰性铺路用它——区块已生成在内存里，直接写方块不该再 pregen。
         TerrainPreparer rawTerrain = bindings.terrain(this, roadBlock, bridgeBlock, bridgeRail,
                 wall.enabled(), wall.block(), wall.height());
-        // 惰性铺路节流（Iris 世界随区块生成按需铺路时对主线程 tick 的占用上限）：全局队列 + 单常驻 worker 合批，
-        // 每 interval tick 取一批、受列数/墙钟双约束，整批只重发+重光照一次。config 驱动，默认保守。
-        rawTerrain.configureLazyRoad(
-                getConfig().getInt("road-pave.columns-per-tick", 512),
-                getConfig().getLong("road-pave.budget-ms", 5L),
-                getConfig().getInt("road-pave.interval-ticks", 2));
+        // 惰性铺路节流是 Iris 内部调度参数，保持代码默认值，不暴露给服主配置。
         // Iris 世界：套一层异步预生成装饰器——整地/虚空平台前先用 Iris 多线程预生成器把区域生成好，
         // 避免在主线程同步 getChunk/loadChunk 触发 Iris 重型生成（建会后卡顿的根因）。非 Iris 原样返回。
         // 注意：路网【不再】走预生成提前铺满（那会强制生成整片世界、违背 Iris lazy-gen），改由惰性铺路按需铺。
@@ -726,6 +722,39 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             }
         }
         return lv;
+    }
+
+    /**
+     * 加载本服标识 server.yml。该文件不作为 jar 内默认资源打包；首启按服务器当前工作目录名生成，
+     * 服主需要跨服标识时只改这个小文件。
+     */
+    private org.bukkit.configuration.file.FileConfiguration loadServerConfig() {
+        java.io.File file = new java.io.File(getDataFolder(), "server.yml");
+        if (!file.exists()) {
+            String defaultName = defaultServerName();
+            java.util.List<String> lines = java.util.List.of(
+                    "# GuildShelter 本服标识配置",
+                    "# 默认值取服务器当前工作目录的文件夹名；跨服时可改成代理端配置的服务器名。",
+                    "server-name: \"" + defaultName.replace("\\", "\\\\").replace("\"", "\\\"") + "\"",
+                    "");
+            try {
+                java.nio.file.Files.write(file.toPath(), lines, java.nio.charset.StandardCharsets.UTF_8);
+            } catch (java.io.IOException e) {
+                getLogger().warning("生成 server.yml 失败: " + e.getMessage());
+            }
+        }
+        return org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
+    }
+
+    private String defaultServerName() {
+        java.nio.file.Path cwd = java.nio.file.Path.of("").toAbsolutePath().normalize();
+        java.nio.file.Path fileName = cwd.getFileName();
+        String name = fileName != null ? fileName.toString() : "";
+        if (name == null || name.isBlank()) {
+            java.io.File worldContainer = getServer().getWorldContainer();
+            name = worldContainer != null ? worldContainer.getName() : "";
+        }
+        return (name == null || name.isBlank()) ? "server" : name;
     }
 
     /** 若源有该键则复制到目标。返回是否复制了。 */
