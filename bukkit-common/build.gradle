@@ -31,10 +31,12 @@ dependencies {
     compileOnly 'com.refinedmods.refinedstorage:refinedstorage-common-api:3.2.1'
     compileOnly 'com.refinedmods.refinedstorage:refinedstorage-common:3.2.1'
 
-    // 公会插件 API（不在 Maven，走本地 libs）。排除 minecraft/neoforge/worldedit 大件。
+    compileOnly 'cn.handyplus.guild:PlayerGuild:2.17.5'
+
+    // 公会插件 API（不在 Maven，走本地 libs）。排除 minecraft/neoforge/worldedit/PlayerGuild 大件。
     compileOnly rootProject.fileTree('libs') {
         include '*.jar'
-        exclude 'minecraft-server-patched*', 'neoforge-*', 'worldedit-*'
+        exclude 'PlayerGuild-*', 'minecraft-server-patched*', 'neoforge-*', 'worldedit-*'
     }
 
     // 持久层（与 core 一致，编译期可见 Hikari 类型用于装配）

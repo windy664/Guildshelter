@@ -255,7 +255,7 @@ performance:
 
   # 性能统计 + 排行广播
   stats:
-    enabled: false
+    enabled: true
     broadcast-interval-seconds: 1800  # 30分钟广播一次
     top-count: 5                      # 显示前N名
     weights:

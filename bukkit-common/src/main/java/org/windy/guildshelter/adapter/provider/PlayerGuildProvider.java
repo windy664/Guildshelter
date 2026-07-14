@@ -1,12 +1,12 @@
 package org.windy.guildshelter.adapter.provider;
 
 import cn.handyplus.guild.api.PlayerGuildApi;
-import cn.handyplus.guild.constants.GuildRoleEnum;
 import cn.handyplus.guild.enter.GuildInfo;
 import org.windy.guildshelter.domain.model.GuildId;
 import org.windy.guildshelter.domain.model.PlayerRef;
 import org.windy.guildshelter.domain.port.GuildProvider;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.logging.Logger;
@@ -59,15 +59,36 @@ public final class PlayerGuildProvider implements GuildProvider {
         return guild.value();
     }
 
-    /** 会长/副会长算管理：PlayerGuild 角色 roleId 越小权越高（ONE=会长, TWO=副会长），取 ≤2。 */
+    /** 会长/副会长算管理：PlayerGuild 公开 API 只暴露角色文本。 */
     @Override
     public boolean isGuildAdmin(PlayerRef player, GuildId guild) {
         String name = guard("isGuildAdmin.name", () -> PlayerGuildApi.getPlayerGuildName(player.uuid()), null);
         if (name == null || !name.equals(guild.value())) {
             return false; // 不在该公会
         }
-        GuildRoleEnum role = guard("isGuildAdmin.role", () -> PlayerGuildApi.getPlayerGuildRoleEnum(player.uuid()), null);
-        return role != null && role.getRoleId() != null && role.getRoleId() <= 2;
+        String role = guard("isGuildAdmin.role", () -> PlayerGuildApi.getPlayerGuildRole(player.uuid()), null);
+        return isAdminRole(role);
+    }
+
+    private static boolean isAdminRole(String role) {
+        if (role == null || role.isBlank()) {
+            return false;
+        }
+        String normalized = role.trim();
+        try {
+            return Integer.parseInt(normalized) <= 2;
+        } catch (NumberFormatException ignored) {
+            // PlayerGuild may return localized role names instead of role ids.
+        }
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        return upper.equals("ONE")
+                || upper.equals("TWO")
+                || normalized.contains("会长")
+                || normalized.contains("副会长")
+                || upper.contains("OWNER")
+                || upper.contains("LEADER")
+                || upper.contains("VICE")
+                || upper.contains("DEPUTY");
     }
 
     // —— memberCap 缓存 ——

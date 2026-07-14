@@ -4360,13 +4360,14 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
 
         long seed = ThreadLocalRandom.current().nextLong();
         UUID audience = player.getUniqueId();
+        final TerrainPrepMode selectedTerrainMode = terrainMode;
 
         sender.sendMessage(Messages.get("info.createcamp_starting"));
 
         // 调度到下一 tick 避免死锁（与 admin create 同理）
         Bukkit.getScheduler().runTask(plugin, () -> {
             try {
-                service.createGuildAsync(guild, seed, terrainMode, serverName, audience, gw -> {
+                service.createGuildAsync(guild, seed, selectedTerrainMode, serverName, audience, gw -> {
                     registry.register(gw);
                     try {
                         Manor manor = service.assignManor(guild, ref);
