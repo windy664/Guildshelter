@@ -88,7 +88,7 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
         Player p = e.getPlayer();
         GuildWorld gw = registry.get(p.getWorld().getName());
         if (gw != null) {
-            sendPlots(p, gw);
+            refreshPlayer(p, gw);
         } else if (registry.get(e.getFrom().getName()) != null) {
             // 从公会世界离开到非公会世界：清空高亮，避免站回主世界还残留（同名 overworld 地图）。
             sendClear(p, e.getFrom().getName());
@@ -113,6 +113,20 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
                 sendPlots(p, gw);
             }
         }
+    }
+
+    /** Re-send one player's active guild-world highlights after teleport/client dimension state settles. */
+    public void refreshPlayer(Player player, GuildWorld gw) {
+        sendPlotsIfStillInWorld(player, gw, 5L);
+        sendPlotsIfStillInWorld(player, gw, 40L);
+    }
+
+    private void sendPlotsIfStillInWorld(Player player, GuildWorld gw, long delayTicks) {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline() && gw.worldName().equals(player.getWorld().getName())) {
+                sendPlots(player, gw);
+            }
+        }, delayTicks);
     }
 
     // ===== 出站：PLOTS（已占领 chunk）=====

@@ -33,3 +33,5 @@ guildshelter-client/
 
 # Local notes and generated documentation drafts
 *.md
+!readme.md
+!README.md

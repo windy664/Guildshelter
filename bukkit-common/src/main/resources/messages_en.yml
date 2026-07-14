@@ -195,7 +195,7 @@ success:
   claim: "§6✦ §aPlot §f#%s §aassigned §8(lv %s) §7— terrain prep, teleporting..."
   claim_hint: "§8▸ §7Tip: one plot per player. Use /gs admin fill for more."
   upgrade_guild: "§6⬆ §aGuild upgraded! §f%s §7/ §f%s§a §8| §7slots §f%s→%s §8| §7border §f%s→%s§a"
-  delete: "§6✦ §aUnloaded §f%s §8(world folder needs manual cleanup)"
+  delete: "§6✦ §aUnloaded guild world and cleared core plugin data. §7World: §f%s §7| Folder: §f%s §8(confirm in file manager, then delete manually)"
   fill: "§6✦ §aFilled §f%s §awith §f%s §atest plots"
   fill_full: "§e⚠ §aReached limit §f%s §a(filled %s) §7— upgrade guild first"
   map: "§6✦ §aGrid map printed to console"

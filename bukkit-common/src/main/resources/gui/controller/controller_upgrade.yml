@@ -1,0 +1,56 @@
+title: "&0庄园控制器 - 升级"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: EXPERIENCE_BOTTLE
+    name: "&a升级"
+    lore:
+      - "&7当前等级: &f{level}/{max_level}"
+      - "&7当前额度: &f{unlocked}&7/&f{quota} chunk"
+      - "&7下一级: &fLv{next_level} &8| &7额度 &f{next_quota}"
+    action: ""
+  upgrade:
+    index: 20
+    material: EMERALD
+    name: "&a确认升级"
+    lore:
+      - "&8提交升级请求"
+      - "&7会先检查 Vault 余额与背包材料。"
+      - "&7全部满足后才会扣除并提升等级。"
+      - ""
+      - "&e点击升级到 Lv{next_level}"
+    action: "command.upgrade"
+  cost:
+    index: 22
+    material: GOLD_INGOT
+    name: "&eVault + 物品消耗"
+    lore:
+      - "&7配置: &flevels.yml &8-> &fmanor.upgrade-costs"
+      - "&7GUI 只触发命令，不直接扣除。"
+    action: ""
+  unlock:
+    index: 24
+    material: DIAMOND_PICKAXE
+    name: "&a解锁脚下区块"
+    lore:
+      - "&8扩展可建造范围"
+      - "&7站在相邻的未解锁区块上使用。"
+      - "&7消耗庄园额度，不消耗升级材料。"
+      - ""
+      - "&e点击解锁脚下区块"
+    action: "command.unlock"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore: []
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore: []
+    action: "close"

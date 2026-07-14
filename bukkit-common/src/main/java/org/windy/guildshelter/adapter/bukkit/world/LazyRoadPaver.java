@@ -11,15 +11,14 @@ import org.windy.guildshelter.domain.port.TerrainPreparer;
 import java.util.function.Predicate;
 
 /**
- * <b>惰性路面铺设</b>：对 Iris 等惰性世界，<b>绝不</b>提前强制生成区块来铺路（那会触犯 Iris 的 lazy-gen 原则、
- * 白白生成大片没人去的世界）。改成"<b>区块自然生成时顺手铺它那一格路</b>"——玩家探索到哪、Iris 生成到哪，
- * 就在刚生成的那个区块上把路铺好。零强制生成，路网跟着玩家脚步自然成形。
+ * <b>按需路面铺设</b>：不在建会/认领庄园时提前强制生成或预铺整张路网。
+ * 改成"<b>路区块被加载/生成时顺手铺它那一格路</b>"——玩家走到哪，路补到哪。
+ * 这样既避开 Iris lazy-gen 的大范围生成，也避免非惰性世界认领新庄园时一次铺完整圈路。
  *
  * <p>两端共用的决策核心：Bukkit 端 {@link LazyRoadPaveListener}（{@code ChunkLoadEvent#isNewChunk}）、
  * NeoForge 端原生 {@code ChunkEvent.Load} 各自把"新生成的区块坐标"喂给 {@link #onChunkGenerated}。
  *
- * <p>只对<b>惰性世界</b>生效（{@code lazyCheck}）：非惰性世界由 {@code prepareRoadsWithinBorder} 的
- * 提前铺满负责（那种世界区块加载廉价，预铺无妨）。
+ * <p>历史上只对<b>惰性世界</b>生效；现在非惰性世界也走按需补铺，避免大型路网一次性写方块。
  *
  * <p><b>用原始整地器</b>（非 Iris 预生成装饰器）：区块已生成且在内存里，{@code surfaceRoad} 的
  * {@code getHighestBlockYAt/setBlock} 命中已加载区块、<b>不触发任何生成</b>；若再套预生成装饰器反而会无谓地
@@ -29,7 +28,7 @@ public final class LazyRoadPaver {
 
     private final GuildWorldRegistry registry;
     private final TerrainPreparer rawTerrain;
-    /** 世界是否惰性生成（=Iris 世界）。只对惰性世界铺，非惰性走提前铺满。 */
+    /** 兼容旧构造参数；道路已统一按需补铺，不再用它排除非惰性世界。 */
     private final Predicate<String> lazyCheck;
     /** 整地总开关：config terrain-prep==NONE 时不铺任何路（与 NaturalWorldPrep 同语义）。 */
     private final boolean roadsEnabled;
@@ -56,9 +55,6 @@ public final class LazyRoadPaver {
         GuildWorld gw = registry.get(worldName);
         if (gw == null || gw.terrainMode() == TerrainPrepMode.VOID) {
             return; // 非公会世界 / 虚空(空岛无路)
-        }
-        if (!lazyCheck.test(worldName)) {
-            return; // 非惰性世界：由提前铺满负责，这里不重复
         }
         LayoutCalculator layout = new LayoutCalculator(gw.layout());
         int lx = chunkX - gw.originChunkX();

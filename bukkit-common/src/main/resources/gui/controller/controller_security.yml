@@ -1,0 +1,79 @@
+title: "&0庄园控制器 - 金库与安保"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: SHIELD
+    name: "&c金库与安保"
+    lore:
+      - "&7管理访客、黑名单、Flag 与审计记录。"
+      - "&7金库/无人机类玩法以后可以继续挂在这里。"
+    action: ""
+  open:
+    index: 20
+    material: OAK_DOOR
+    name: "&a临时开放访客"
+    lore:
+      - "&8临时允许访客进入"
+      - "&7默认开放 60 分钟，适合展示、评分或活动。"
+      - "&7开放期间访客规则按庄园 Flag 执行。"
+      - ""
+      - "&e点击开放 60 分钟"
+    action: "command.open.60"
+  close_visitors:
+    index: 21
+    material: IRON_DOOR
+    name: "&c关闭访客"
+    lore:
+      - "&8恢复私有访问"
+      - "&7立即关闭临时开放状态。"
+      - "&7已信任成员仍按权限进入。"
+      - ""
+      - "&e点击关闭访客"
+    action: "command.close"
+  flag:
+    index: 22
+    material: REDSTONE_TORCH
+    name: "&eFlag 设置"
+    lore:
+      - "&8细分行为规则"
+      - "&7控制容器、交互、PVP、进入提示等庄园策略。"
+      - "&7适合进阶管理员和庄主调整。"
+      - ""
+      - "&e点击查看 Flag 用法"
+    action: "command.flag"
+  deny:
+    index: 23
+    material: REDSTONE_BLOCK
+    name: "&c黑名单"
+    lore:
+      - "&8拒绝特定玩家"
+      - "&7把玩家加入黑名单，限制其进入或互动。"
+      - "&7添加对象仍需在聊天命令中指定。"
+      - ""
+      - "&e点击查看黑名单命令"
+    action: "command.deny"
+  log:
+    index: 24
+    material: PAPER
+    name: "&e审计日志"
+    lore:
+      - "&8追踪关键变更"
+      - "&7查看升级、解锁、权限调整等审计记录。"
+      - ""
+      - "&e点击查看日志"
+    action: "command.log"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore: []
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore: []
+    action: "close"

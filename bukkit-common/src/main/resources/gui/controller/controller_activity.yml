@@ -1,0 +1,78 @@
+title: "&0庄园控制器 - 活动"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: WHEAT
+    name: "&d活动"
+    lore:
+      - "&7围绕访客、好友和评价的轻量入口。"
+      - "&7适合活动期或开放参观时使用。"
+    action: ""
+  flower:
+    index: 20
+    material: FLOWER_POT
+    name: "&d送花"
+    lore:
+      - "&8给喜欢的庄园一点反馈"
+      - "&7用于访客互动和人气展示。"
+      - "&7目标仍按你当前所在庄园解析。"
+      - ""
+      - "&e点击送花"
+    action: "command.flower"
+  board:
+    index: 21
+    material: OAK_SIGN
+    name: "&a留言墙"
+    lore:
+      - "&8查看脚下庄园留言"
+      - "&7适合访客评价、合作提醒和活动记录。"
+      - ""
+      - "&e点击打开留言墙"
+    action: "command.board"
+  comment:
+    index: 22
+    material: NAME_TAG
+    name: "&a留言"
+    lore:
+      - "&8留下文本留言"
+      - "&7给当前庄园主人发送一条可追溯消息。"
+      - "&7具体内容在聊天命令中输入。"
+      - ""
+      - "&e点击查看留言用法"
+    action: "command.comment"
+  rate:
+    index: 23
+    material: NETHER_STAR
+    name: "&e评分"
+    lore:
+      - "&8为庄园打分"
+      - "&7面向开放参观和排行榜统计。"
+      - "&7分数仍在聊天命令中输入。"
+      - ""
+      - "&e点击查看评分用法"
+    action: "command.rate"
+  inbox:
+    index: 24
+    material: CHEST
+    name: "&a收件箱"
+    lore:
+      - "&8查看收到的互动"
+      - "&7集中处理留言、反馈和系统通知。"
+      - ""
+      - "&e点击打开收件箱"
+    action: "command.inbox"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore: []
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore: []
+    action: "close"

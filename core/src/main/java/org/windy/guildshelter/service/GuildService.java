@@ -277,16 +277,15 @@ public final class GuildService {
                 () -> creating.remove(guild));
     }
 
-    /** 建会后续（世界已建好后）：初始解锁主城角落 + 存库 + 铺主城路/围墙（惰性世界则登记延迟）。须在主线程。 */
+    /** 建会后续（世界已建好后）：初始解锁主城角落 + 存库 + 围墙（道路改为区块按需补铺）。须在主线程。 */
     private GuildWorld finishCreate(GuildId guild, GuildWorld gw) {
         gw = gw.withCityUnlockedChunks(initialCityUnlocked(gw)); // 初始解锁主城角落正方形（会长起点）
         guilds.save(gw);
         if (worlds.lazilyGenerated(gw.worldName())) {
-            // Iris 等惰性世界：建会时主城区块还没生成，立刻铺路会强制同步生成。登记延迟，
-            // 玩家首次进入该世界、区块自然加载后再补铺主城路+围墙（见 DeferredPrep）。
+            // Iris 等惰性世界：建会时主城区块还没生成，立刻整备会强制同步生成。
+            // 玩家首次进入该世界、区块自然加载后再补围墙（道路由 LazyRoadPaver 按区块补铺）。
             deferredPrep.markGuildPending(guild, gw.worldName());
         } else {
-            prepareRoadsWithinBorder(gw); // 建会即把当前边界内整张路网铺满（建会时边界=主城环，等价旧的主城环路）
             buildCityWall(gw);            // 围墙（默认关）
         }
         audit(guild, null, "guild_create", guild.value(), "world=" + gw.worldName());
@@ -441,13 +440,7 @@ public final class GuildService {
             gw = gw.withAllocatedSlots(newAllocated);
             guilds.save(gw);
             worlds.applyBorder(gw); // 边界随分配扩
-            // 边界扩出新的一环 → 提前把该环内整张路网铺满（不靠后续成员逐个零散补路）。
-            // 仅当 ring 真增大才铺(幂等长条铺满当前边界)，避免每次加入都重铺全网。惰性(Iris)世界仍走整地端口的预生成。
-            LayoutCalculator lc = new LayoutCalculator(gw.layout());
-            if (lc.adaptiveBorderRingCells(newAllocated, NaturalWorldPrep.ROAD_FILL_BUFFER)
-                    > lc.adaptiveBorderRingCells(oldAllocated, NaturalWorldPrep.ROAD_FILL_BUFFER)) {
-                prepareRoadsWithinBorder(gw);
-            }
+            // 道路不再随边界扩张预铺整网：由区块加载/生成时按需补铺，避免认领新庄园时一次性铺完整圈路。
         }
 
         prepareManorTerrain(gw, manor, false); // 异步整地（默认行为，claim 会额外补一次同步整地）
@@ -496,7 +489,7 @@ public final class GuildService {
             guilds.save(gw);
             worlds.applyBorder(gw); // 边界随分配扩
         }
-        prepareManorTerrain(gw, manor, true); // 同步整地+铺路：给认领者一块整好的起点
+        prepareManorTerrain(gw, manor, true); // 同步整地：只给认领者一块整好的起点，路按需补铺
         MembershipChangeListener l = membershipListener;
         if (l != null) l.onMemberAssigned(guild, player.uuid());
         audit(guild, player, "manor_claim", guild.value() + "#" + manor.slot(), null);
@@ -884,13 +877,10 @@ public final class GuildService {
     /**
      * 整备某庄园用地。按地形类型分流到 {@link WorldPrep}。
      *
-     * @param includeRoads 是否同时铺该格四周的路。<b>仅首次分配(assign)时铺</b>；升级庄园传 false——
-     *                     路是格子级的、与庄园等级无关，升级时重铺纯属浪费（虚空策略忽略此参数）。
-     *                     <b>惰性(Iris)世界强制不铺路</b>：庄园四周的路同样改由 {@code LazyRoadPaver} 按需铺，
-     *                     避免在此 pregen 庄园外圈未生成的路区块；庄园用地本身（玩家落点）仍正常整。
+     * @param includeRoads 兼容旧调用语义。当前默认不在庄园认领/分配时预铺道路；道路由区块加载/生成时按需补铺，
+     *                     避免一次性铺完整个路网或庄园四周环路。庄园用地本身（玩家落点）仍正常整。
      */
     public void prepareManorTerrain(GuildWorld gw, Manor manor, boolean sync, boolean includeRoads) {
-        boolean roads = includeRoads && !worlds.lazilyGenerated(gw.worldName());
-        prep(gw).prepareManor(gw, manor, sync, roads);
+        prep(gw).prepareManor(gw, manor, sync, false);
     }
 }

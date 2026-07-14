@@ -1,0 +1,80 @@
+title: "&0庄园控制器 - 资料"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: BOOK
+    name: "&e资料"
+    lore:
+      - "&7公会: &f{guild}"
+      - "&7庄园: &f#{slot}"
+      - "&7庄主: &f{owner}"
+      - "&7公会等级: &f{guild_level} &8({guild_level_name}&8)"
+    action: ""
+  info:
+    index: 20
+    material: MAP
+    name: "&a庄园信息"
+    lore:
+      - "&8概览当前庄园"
+      - "&7展示等级、额度、成员与公会信息。"
+      - ""
+      - "&e点击查看详情"
+    action: "command.info"
+  manors:
+    index: 21
+    material: CHEST
+    name: "&a我的庄园"
+    lore:
+      - "&8多庄园管理"
+      - "&7列出你在本公会拥有的全部地皮。"
+      - "&7可查看默认 Home 与各地皮坐标。"
+      - ""
+      - "&e点击打开列表"
+    action: "command.manors"
+  home:
+    index: 22
+    material: ENDER_PEARL
+    name: "&a回家"
+    lore:
+      - "&8快速返回建设点"
+      - "&7优先使用你设置的 Home；未设置时回到锚定角。"
+      - ""
+      - "&e点击传送"
+    action: "command.home"
+  sethome:
+    index: 23
+    material: COMPASS
+    name: "&a设置 Home"
+    lore:
+      - "&8保存当前落点"
+      - "&7把脚下位置设为以后回家的传送点。"
+      - "&7适合放在入口、工作区或仓库旁。"
+      - ""
+      - "&e点击设置"
+    action: "command.sethome"
+  members:
+    index: 24
+    material: PLAYER_HEAD
+    name: "&a成员管理"
+    lore:
+      - "&8协作与访问关系"
+      - "&7查看庄主、共建人、普通成员和黑名单。"
+      - "&7细分增删仍使用对应管理命令。"
+      - ""
+      - "&e点击查看"
+    action: "menu.members"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore: []
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore: []
+    action: "close"

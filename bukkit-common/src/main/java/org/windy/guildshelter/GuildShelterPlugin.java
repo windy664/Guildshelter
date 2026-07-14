@@ -563,6 +563,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         this.uiBackend = useMod ? modUi : bukkitUi;
         getServer().getPluginManager().registerEvents(new VanillaGuiListener(bukkitUi), this);
         this.guiLoader = new YamlGuiLoader(getDataFolder(), getLogger());
+        command.registerUiActions(this.uiRouter);
         getLogger().info("UI 后端: " + this.uiBackend.getClass().getSimpleName()
                 + (this.uiBackend == modUi ? "（模组联动）" : "（原版 Inventory 兜底；模组联动 UI 预留中）"));
 

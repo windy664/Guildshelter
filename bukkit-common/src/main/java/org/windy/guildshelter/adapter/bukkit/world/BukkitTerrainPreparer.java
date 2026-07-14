@@ -15,6 +15,8 @@ import org.windy.guildshelter.domain.port.TerrainPreparer;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * {@link TerrainPreparer} 的 Bukkit 实现：对庄园范围按列整地，主线程<b>分批</b>处理避免卡顿。
@@ -50,7 +52,10 @@ public final class BukkitTerrainPreparer implements TerrainPreparer {
     // 旧实现每个新生成的路区块各起一个 runTaskTimer + 各自一个 EditSession.close()（重发+重光照），探索时一 tick
     // 内多区块 = 多次 flush → tick 尖峰。改成入这一个队列，常驻 worker 每 interval tick 取一批合成单次 flush。
     private record LazyRoadChunk(String worldName, int chunkX, int chunkZ, RoadMask roadMask) {}
+    private record LazyRoadKey(String worldName, int chunkX, int chunkZ) {}
     private final Deque<LazyRoadChunk> lazyRoadQueue = new ArrayDeque<>();
+    private final Set<LazyRoadKey> queuedLazyRoads = new HashSet<>();
+    private final Set<LazyRoadKey> pavedLazyRoads = new HashSet<>();
     private boolean lazyWorkerStarted = false;
     /** 节流参数（config 驱动，{@link #configureLazyRoad} 注入；下为内置默认值）。 */
     private int lazyColumnsPerTick = 512;          // 每次运行最多 512 列 ≈ 2 个区块
@@ -296,8 +301,13 @@ public final class BukkitTerrainPreparer implements TerrainPreparer {
     @Override
     public void enqueueLazyRoad(String worldName, ChunkRegion chunkRegion, RoadMask roadMask) {
         // chunkRegion 为单区块：由其方块边界还原 chunk 坐标。须主线程调用（ChunkLoadEvent 已在主线程）。
-        lazyRoadQueue.add(new LazyRoadChunk(worldName,
-                chunkRegion.minBlockX() >> 4, chunkRegion.minBlockZ() >> 4, roadMask));
+        int chunkX = chunkRegion.minBlockX() >> 4;
+        int chunkZ = chunkRegion.minBlockZ() >> 4;
+        LazyRoadKey key = new LazyRoadKey(worldName, chunkX, chunkZ);
+        if (pavedLazyRoads.contains(key) || !queuedLazyRoads.add(key)) {
+            return;
+        }
+        lazyRoadQueue.add(new LazyRoadChunk(worldName, chunkX, chunkZ, roadMask));
         ensureLazyWorker();
     }
 
@@ -340,10 +350,13 @@ public final class BukkitTerrainPreparer implements TerrainPreparer {
                 sink = (curWorldObj == null) ? null : newSink(curWorldObj); // FAWE 缺失/世界不在 → null
             }
             lazyRoadQueue.poll();
+            LazyRoadKey key = new LazyRoadKey(rc.worldName(), rc.chunkX(), rc.chunkZ());
+            queuedLazyRoads.remove(key);
             if (curWorldObj == null || sink == null) {
                 continue; // 世界未加载 / 缺 FAWE：丢弃该区块（newSink 首次已告警，不刷屏）
             }
             cols += paveRoadChunkInto(curWorldObj, sink, rc.chunkX(), rc.chunkZ(), rc.roadMask());
+            pavedLazyRoads.add(key);
         }
         if (sink != null) {
             sink.flush(); // 本次运行唯一一次重发+重光照

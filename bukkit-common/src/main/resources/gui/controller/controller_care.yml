@@ -1,0 +1,78 @@
+title: "&0庄园控制器 - 美化与护理"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: ANVIL
+    name: "&b美化与护理"
+    lore:
+      - "&7面向建设前后的整理动作。"
+      - "&7高风险操作仍会走命令确认。"
+    action: ""
+  clear:
+    index: 20
+    material: IRON_SHOVEL
+    name: "&a清理地表"
+    lore:
+      - "&8清理当前庄园地表"
+      - "&7用于重新规划建筑或清除自然杂物。"
+      - "&c会改动地表，请确认站在目标庄园。"
+      - ""
+      - "&e点击开始清理流程"
+    action: "command.clear"
+  template:
+    index: 21
+    material: WRITABLE_BOOK
+    name: "&a建筑模板"
+    lore:
+      - "&8保存或套用建筑方案"
+      - "&7把成熟布局沉淀为模板，便于迁移或重建。"
+      - "&7具体子操作会在聊天提示中继续选择。"
+      - ""
+      - "&e点击打开模板命令"
+    action: "command.template"
+  move:
+    index: 22
+    material: MINECART
+    name: "&a搬家"
+    lore:
+      - "&8迁移庄园位置"
+      - "&7适合调整邻居、道路或景观布局。"
+      - "&7会遵守费用、冷却与确认流程。"
+      - ""
+      - "&e点击进入搬家流程"
+    action: "command.move"
+  middle:
+    index: 23
+    material: TARGET
+    name: "&a庄园中心"
+    lore:
+      - "&8定位完整地皮中心"
+      - "&7无视 Home 设置，用于勘察或对齐建筑。"
+      - ""
+      - "&e点击传送到中心"
+    action: "command.middle"
+  desc:
+    index: 24
+    material: OAK_SIGN
+    name: "&a描述/展示"
+    lore:
+      - "&8编辑庄园展示文本"
+      - "&7给访客一个简短介绍，也方便排行榜查看。"
+      - ""
+      - "&e点击查看用法"
+    action: "command.desc"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore: []
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore: []
+    action: "close"

@@ -2,12 +2,16 @@ package org.windy.guildshelter.adapter.bukkit.command;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.windy.guildshelter.adapter.bukkit.GridAsciiMap;
 import org.windy.guildshelter.adapter.bukkit.GuildWorldRegistry;
 import org.windy.guildshelter.adapter.bukkit.ManorEntityCensus;
@@ -17,6 +21,7 @@ import org.windy.guildshelter.adapter.bukkit.MergeRegistry;
 import org.windy.guildshelter.adapter.bukkit.Messages;
 import org.windy.guildshelter.adapter.bukkit.Permissions;
 import org.windy.guildshelter.adapter.bukkit.BlockDisplayNames;
+import org.windy.guildshelter.adapter.bukkit.gui.Menus;
 import org.windy.guildshelter.adapter.bukkit.listener.ManorAccessListener;
 import org.windy.guildshelter.adapter.bukkit.world.WorldManager;
 import org.windy.guildshelter.adapter.bungee.ProxyChannel;
@@ -34,14 +39,20 @@ import org.windy.guildshelter.domain.model.TerrainPrepMode;
 import org.windy.guildshelter.domain.port.GuildProvider;
 import org.windy.guildshelter.domain.port.GuildRepository;
 import org.windy.guildshelter.domain.port.ManorRepository;
+import org.windy.guildshelter.domain.port.ui.UiActionRouter;
+import org.windy.guildshelter.domain.port.ui.UiBackend;
+import org.windy.guildshelter.domain.port.ui.UiView;
+import org.windy.guildshelter.domain.port.ui.UiViewer;
 import org.windy.guildshelter.domain.rule.LevelRules;
 import org.windy.guildshelter.service.GuildFullException;
 import org.windy.guildshelter.service.GuildService;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -61,11 +72,11 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
     private static final String ADMIN_PERM = Permissions.ADMIN;
     /** 受 guildshelter.command.<sub> 节点管控的玩家子命令（节点默认放行，见 plugin.yml）。 */
     private static final Set<String> PLAYER_SUBS = Set.of("home", "manors", "spawn", "info",
-            "trust", "untrust", "member", "deny", "undeny", "list", "visit", "clear", "flag", "card",
+            "upgrade", "trust", "untrust", "member", "deny", "undeny", "list", "visit", "clear", "flag", "card",
             "alias", "sethome", "done", "kick", "near", "rate", "top", "middle",
             "comment", "inbox", "swap", "grant", "merge", "unmerge", "confirm", "help", "desc", "toggle", "template", "sub", "bulletin", "open", "close", "flower", "gift", "board", "move",
             "citytrust", "cityuntrust", "unlock", "cityunlock", "claim", "setspawn", "holo", "greeting", "farewell", "log",
-            "cityplot", "createcamp");
+            "cityplot", "createcamp", "controller", "gui");
 
     /** 需要确认的危险操作。 */
     private static final Set<String> CONFIRM_REQUIRED = Set.of(
@@ -173,6 +184,88 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         return manors.findByOwnerAnywhere(PlayerRef.of(player.getUniqueId()));
     }
 
+    private void openController(UiViewer viewer) {
+        Player player = Bukkit.getPlayer(viewer.id());
+        if (player != null) {
+            openController(player);
+        }
+    }
+
+    private void openController(Player player) {
+        Manor manor = currentOwnManor(player).orElse(null);
+        if (manor == null) {
+            player.sendMessage(Messages.get("error.no_manor"));
+            return;
+        }
+        GuildWorld gw = guilds.find(manor.guild()).orElse(null);
+        if (gw == null) {
+            player.sendMessage(Messages.get("error.guild_not_exist", manor.guild().value()));
+            return;
+        }
+        openUi(player, Menus.manorController(manor, gw, levels));
+    }
+
+    private void openControllerPage(UiViewer viewer, UiView source, String page) {
+        Player player = Bukkit.getPlayer(viewer.id());
+        if (player == null) return;
+        Manor manor = contextManor(source, player);
+        if (manor == null) return;
+        GuildWorld gw = contextGuildWorld(source, manor);
+        if (gw == null) {
+            player.sendMessage(Messages.get("error.guild_not_exist", manor.guild().value()));
+            return;
+        }
+        UiView next = switch (page) {
+            case "info" -> Menus.controllerInfo(manor, gw, levels);
+            case "upgrade" -> Menus.controllerUpgrade(manor, gw, levels);
+            case "care" -> Menus.controllerCare(manor, gw);
+            case "security" -> Menus.controllerSecurity(manor, gw);
+            case "activity" -> Menus.controllerActivity(manor, gw);
+            case "members" -> Menus.memberManager(manor);
+            default -> Menus.manorController(manor, gw, levels);
+        };
+        openUi(player, next);
+    }
+
+    private Manor contextManor(UiView view, Player player) {
+        Object obj = view.context().get("manor");
+        if (obj instanceof Manor manor) {
+            return manor;
+        }
+        Manor manor = currentOwnManor(player).orElse(null);
+        if (manor == null) {
+            player.sendMessage(Messages.get("error.no_manor"));
+        }
+        return manor;
+    }
+
+    private GuildWorld contextGuildWorld(UiView view, Manor manor) {
+        Object obj = view.context().get("guildWorld");
+        if (obj instanceof GuildWorld gw) {
+            return gw;
+        }
+        return guilds.find(manor.guild()).orElse(null);
+    }
+
+    private void openUi(Player player, UiView view) {
+        UiBackend backend = org.windy.guildshelter.GuildShelterPlugin.uiBackend();
+        if (backend == null || view == null) {
+            player.sendMessage("§cGUI 后端尚未初始化。");
+            return;
+        }
+        backend.open(new UiViewer(player.getUniqueId(), player.getName()), view);
+    }
+
+    private void runPlayerCommand(UiViewer viewer, String command) {
+        Player player = Bukkit.getPlayer(viewer.id());
+        if (player == null) return;
+        UiBackend backend = org.windy.guildshelter.GuildShelterPlugin.uiBackend();
+        if (backend != null) {
+            backend.close(viewer);
+        }
+        player.performCommand("gs " + command);
+    }
+
     /** 设置访问监听器引用（toggle titles 需要）。 */
     public void setAccessListener(ManorAccessListener listener) {
         this.accessListener = listener;
@@ -210,6 +303,49 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
 
     /** 注入 Xaero 地图圈地通道（可选）：解锁后刷新该公会在线成员的地图高亮。 */
     public void setMapChannel(org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel ch) { this.mapChannel = ch; }
+
+    /** 注册原版/模组共用的 UI 动作。GUI 只路由到已有命令或打开子菜单。 */
+    public void registerUiActions(UiActionRouter router) {
+        if (router == null) return;
+        router.onAction("close", (viewer, view) -> {
+            UiBackend backend = org.windy.guildshelter.GuildShelterPlugin.uiBackend();
+            if (backend != null) backend.close(viewer);
+        });
+        router.onAction("menu.controller", (viewer, view) -> openController(viewer));
+        router.onAction("menu.controller.info", (viewer, view) -> openControllerPage(viewer, view, "info"));
+        router.onAction("menu.controller.upgrade", (viewer, view) -> openControllerPage(viewer, view, "upgrade"));
+        router.onAction("menu.controller.care", (viewer, view) -> openControllerPage(viewer, view, "care"));
+        router.onAction("menu.controller.security", (viewer, view) -> openControllerPage(viewer, view, "security"));
+        router.onAction("menu.controller.activity", (viewer, view) -> openControllerPage(viewer, view, "activity"));
+        router.onAction("menu.members", (viewer, view) -> openControllerPage(viewer, view, "members"));
+        router.onAction("upgrade.pending", (viewer, view) -> runPlayerCommand(viewer, "upgrade"));
+
+        Map<String, String> commands = Map.ofEntries(
+                Map.entry("command.info", "info"),
+                Map.entry("command.upgrade", "upgrade"),
+                Map.entry("command.manors", "manors"),
+                Map.entry("command.home", "home"),
+                Map.entry("command.sethome", "sethome"),
+                Map.entry("command.unlock", "unlock"),
+                Map.entry("command.clear", "clear"),
+                Map.entry("command.template", "template"),
+                Map.entry("command.move", "move"),
+                Map.entry("command.middle", "middle"),
+                Map.entry("command.desc", "desc"),
+                Map.entry("command.open.60", "open 60"),
+                Map.entry("command.close", "close"),
+                Map.entry("command.flag", "flag"),
+                Map.entry("command.deny", "deny"),
+                Map.entry("command.log", "log"),
+                Map.entry("command.flower", "flower"),
+                Map.entry("command.board", "board"),
+                Map.entry("command.comment", "comment"),
+                Map.entry("command.rate", "rate"),
+                Map.entry("command.inbox", "inbox"));
+        for (Map.Entry<String, String> entry : commands.entrySet()) {
+            router.onAction(entry.getKey(), (viewer, view) -> runPlayerCommand(viewer, entry.getValue()));
+        }
+    }
 
     /** PAPI 变量白名单（悬浮字文本里允许出现的 %占位符%；literal+正则，复用 BlockMatcher）。空=不允许任何占位符。 */
     private org.windy.guildshelter.adapter.bukkit.BlockMatcher holoPapiWhitelist =
@@ -291,6 +427,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             case "manors" -> { manorsList(sender); return true; }
             case "spawn" -> { spawn(sender); return true; }
             case "info" -> { info(sender); return true; }
+            case "upgrade" -> { upgrade(sender); return true; }
             case "trust" -> { trust(sender, args); return true; }
             case "untrust" -> { untrust(sender, args); return true; }
             case "member" -> { member(sender, args); return true; }
@@ -338,6 +475,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             case "log" -> { logCmd(sender, args); return true; }
             case "cityplot" -> { cityPlot(sender, args); return true; }
             case "createcamp" -> { createCamp(sender, args); return true; }
+            case "controller", "gui" -> { controller(sender); return true; }
             case "admin" -> { /* 落到下面的管理分支 */ }
             default -> {
                 sender.sendMessage(Messages.get("usage.player_commands"));
@@ -378,6 +516,15 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
     }
 
     // ===== 玩家命令（自管模式：以"拥有庄园"判定归属公会）=====
+
+    /** /gs controller|gui：打开庄园控制器原版 Inventory UI。 */
+    private void controller(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Messages.get("error.player_only"));
+            return;
+        }
+        openController(player);
+    }
 
     /** /gs home：传送到自己庄园（优先用 sethome 坐标，否则实占中心）。 */
     private void home(CommandSender sender, String[] args) {
@@ -502,6 +649,81 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         if (mine.size() < limit) {
             sender.sendMessage("§7站在空闲地皮上 §f/gs claim §7认领更多。");
         }
+    }
+
+    /** /gs upgrade：按 levels.yml 的 Vault 金额与背包物品成本升级当前庄园。 */
+    private void upgrade(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Messages.get("error.only_player_upgrade"));
+            return;
+        }
+        Manor manor = currentOwnManor(player).orElse(null);
+        if (manor == null) {
+            sender.sendMessage(Messages.get("error.no_manor"));
+            return;
+        }
+        GuildWorld gw = guilds.find(manor.guild()).orElse(null);
+        if (gw == null) {
+            sender.sendMessage(Messages.get("error.guild_not_exist", manor.guild().value()));
+            return;
+        }
+        int cap = levels.manorMaxLevel();
+        if (!levels.canUpgradeManor(manor.level())) {
+            sender.sendMessage(Messages.get("error.already_max_level", cap));
+            return;
+        }
+
+        int targetLevel = manor.level() + 1;
+        UpgradeCost cost;
+        try {
+            cost = loadUpgradeCost(targetLevel);
+        } catch (IllegalArgumentException ex) {
+            sender.sendMessage("§c庄园升级配置错误: §f" + ex.getMessage());
+            return;
+        }
+
+        PlayerRef ref = PlayerRef.of(player.getUniqueId());
+        org.windy.guildshelter.domain.port.EconomyPort eco = null;
+        if (cost.money() > 0) {
+            eco = economy();
+            if (eco == null) {
+                sender.sendMessage("§c升级需要 Vault 金额 §f" + cost.money() + "§c，但未检测到 Vault 经济。");
+                return;
+            }
+            if (!eco.has(ref, cost.money())) {
+                sender.sendMessage("§c余额不足，需要 §f" + eco.format(cost.money()) + "§c。");
+                return;
+            }
+        }
+
+        List<String> missing = missingItems(player, cost.items());
+        if (!missing.isEmpty()) {
+            sender.sendMessage("§c升级材料不足：");
+            for (String line : missing) {
+                sender.sendMessage("§7- " + line);
+            }
+            return;
+        }
+
+        if (eco != null && !eco.withdraw(ref, cost.money())) {
+            sender.sendMessage("§c扣款失败，请稍后重试。");
+            return;
+        }
+        removeItems(player, cost.items());
+
+        boolean ok = service.upgradeManor(manor.guild(), manor.slot());
+        if (!ok) {
+            if (eco != null) {
+                eco.deposit(ref, cost.money());
+            }
+            refundItems(player, cost.items());
+            sender.sendMessage(Messages.get("error.already_max_level", cap));
+            return;
+        }
+
+        Manor upgraded = manors.findBySlot(manor.guild(), manor.slot()).orElseThrow();
+        String moneyText = cost.money() > 0 && eco != null ? " §7| §e-" + eco.format(cost.money()) : "";
+        sender.sendMessage(Messages.get("success.upgraded", upgraded.level(), cap) + moneyText);
     }
 
     /** /gs spawn：传送到自己公会的主城。 */
@@ -1005,6 +1227,116 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
     private org.windy.guildshelter.domain.port.EconomyPort economyCache;
     private boolean economyResolved;
 
+    private record UpgradeCost(double money, List<ItemCost> items) {}
+    private record ItemCost(String id, Material material, int amount) {}
+
+    private UpgradeCost loadUpgradeCost(int targetLevel) {
+        File file = new File(plugin.getDataFolder(), "levels.yml");
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        String path = "manor.upgrade-costs.levels." + targetLevel;
+        ConfigurationSection section = cfg.getConfigurationSection(path);
+        if (section == null) {
+            return new UpgradeCost(0.0, List.of());
+        }
+        double money = Math.max(0.0, section.getDouble("money", 0.0));
+        List<ItemCost> items = new ArrayList<>();
+        for (String raw : section.getStringList("items")) {
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            items.add(parseItemCost(raw));
+        }
+        return new UpgradeCost(money, List.copyOf(items));
+    }
+
+    private ItemCost parseItemCost(String raw) {
+        String text = raw.trim();
+        int split = text.lastIndexOf(':');
+        if (split <= 0 || split == text.length() - 1) {
+            throw new IllegalArgumentException("物品成本必须写成 material:amount，例如 minecraft:stone:64");
+        }
+        String id = text.substring(0, split).trim();
+        int amount;
+        try {
+            amount = Integer.parseInt(text.substring(split + 1).trim());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("物品数量不是数字: " + raw);
+        }
+        if (amount <= 0) {
+            throw new IllegalArgumentException("物品数量必须大于 0: " + raw);
+        }
+        Material material = material(id);
+        if (material == null || !material.isItem()) {
+            throw new IllegalArgumentException("未知或不可作为物品的材料: " + id);
+        }
+        return new ItemCost(id, material, amount);
+    }
+
+    private static Material material(String id) {
+        String normalized = id.trim().toLowerCase(Locale.ROOT);
+        Material material = Material.matchMaterial(normalized, false);
+        if (material != null) {
+            return material;
+        }
+        int colon = normalized.indexOf(':');
+        String key = colon >= 0 ? normalized.substring(colon + 1) : normalized;
+        return Material.matchMaterial(key.toUpperCase(Locale.ROOT), false);
+    }
+
+    private List<String> missingItems(Player player, List<ItemCost> costs) {
+        List<String> missing = new ArrayList<>();
+        for (ItemCost cost : costs) {
+            int have = countItems(player, cost.material());
+            if (have < cost.amount()) {
+                missing.add(itemName(cost) + " §7需要 §f" + cost.amount() + " §7当前 §c" + have);
+            }
+        }
+        return missing;
+    }
+
+    private int countItems(Player player, Material material) {
+        int count = 0;
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            if (stack != null && stack.getType() == material) {
+                count += stack.getAmount();
+            }
+        }
+        return count;
+    }
+
+    private void removeItems(Player player, List<ItemCost> costs) {
+        for (ItemCost cost : costs) {
+            int remaining = cost.amount();
+            ItemStack[] contents = player.getInventory().getStorageContents();
+            for (int i = 0; i < contents.length && remaining > 0; i++) {
+                ItemStack stack = contents[i];
+                if (stack == null || stack.getType() != cost.material()) {
+                    continue;
+                }
+                int take = Math.min(stack.getAmount(), remaining);
+                stack.setAmount(stack.getAmount() - take);
+                remaining -= take;
+                if (stack.getAmount() <= 0) {
+                    contents[i] = null;
+                }
+            }
+            player.getInventory().setStorageContents(contents);
+        }
+    }
+
+    private void refundItems(Player player, List<ItemCost> costs) {
+        for (ItemCost cost : costs) {
+            Map<Integer, ItemStack> leftovers = player.getInventory().addItem(new ItemStack(cost.material(), cost.amount()));
+            for (ItemStack stack : leftovers.values()) {
+                player.getWorld().dropItemNaturally(player.getLocation(), stack);
+            }
+        }
+    }
+
+    private String itemName(ItemCost cost) {
+        return "§f" + BlockDisplayNames.display(cost.id());
+    }
+
     /** 懒加载 Vault 经济端口（认领花费等用）；无 Vault 返回 null。 */
     private org.windy.guildshelter.domain.port.EconomyPort economy() {
         if (!economyResolved) {
@@ -1406,7 +1738,10 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             return;
         }
         Location custom = campSpawnLoc(world, gw, org.windy.guildshelter.domain.port.CampSpawnStore.Type.VISITOR);
-        player.teleport(custom != null ? custom : worlds.safeSpawn(world, gw));
+        boolean teleported = player.teleport(custom != null ? custom : worlds.safeSpawn(world, gw));
+        if (teleported && mapChannel != null) {
+            mapChannel.refreshPlayer(player, gw);
+        }
         sender.sendMessage(Messages.get("success.visit_teleported", guild.value()));
     }
 
@@ -4053,10 +4388,11 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             return;
         }
         GuildId guild = new GuildId(args[2]);
-        worlds.unloadGuild(guild);
-        guilds.delete(guild);
-        registry.unregister(worlds.worldName(guild));
-        sender.sendMessage(Messages.get("success.delete", worlds.worldName(guild)));
+        String worldName = guilds.find(guild).map(GuildWorld::worldName).orElse(worlds.worldName(guild));
+        File worldFolder = new File(Bukkit.getWorldContainer(), worldName);
+        service.dissolveGuild(guild);
+        registry.unregister(worldName);
+        sender.sendMessage(Messages.get("success.delete", worldName, worldFolder.getAbsolutePath()));
     }
 
     private void listWorlds(CommandSender sender) {
@@ -4082,13 +4418,13 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            for (String s : new String[]{"home", "manors", "spawn", "unlock", "cityunlock", "claim", "info", "trust", "untrust",
+            for (String s : new String[]{"home", "manors", "spawn", "upgrade", "unlock", "cityunlock", "claim", "info", "trust", "untrust",
                     "member", "deny", "undeny", "list", "visit", "clear", "flag", "card",
                     "alias", "sethome", "done", "kick", "near", "rate", "top", "middle",
                     "comment", "inbox", "swap", "grant", "merge", "unmerge", "confirm",
                     "help", "desc", "toggle", "template", "sub", "bulletin", "open", "close",
                     "flower", "gift", "board", "move", "admin", "citytrust", "cityuntrust",
-                    "greeting", "farewell", "log", "cityplot", "createcamp"}) {
+                    "greeting", "farewell", "log", "cityplot", "createcamp", "controller", "gui"}) {
                 out.add(s);
             }
         } else if (args.length == 2) {
