@@ -273,11 +273,11 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             }
         });
 
-        // 庄园升级回调：升到对应等级时由控制台执行对应命令（config: manor-upgrade-commands）。
-        ManorUpgradeCommandHook upgradeHook = ManorUpgradeCommandHook.fromConfig(this);
+        // 庄园升级回调：升到对应等级时由控制台执行对应命令（levels.yml: manor.upgrade-commands）。
+        ManorUpgradeCommandHook upgradeHook = ManorUpgradeCommandHook.fromConfig(this, levelsCfg);
         if (upgradeHook != null) {
             service.setUpgradeHook(upgradeHook);
-            getLogger().info("庄园升级命令回调已启用（manor-upgrade-commands）。");
+            getLogger().info("庄园升级命令回调已启用（levels.yml: manor.upgrade-commands）。");
         }
 
         // 搬家系统
@@ -467,65 +467,61 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         // =========================================================================
         // 领地保护：加入极致啰嗦的启动诊断日志
         // =========================================================================
-        if (getConfig().getBoolean("protection", true)) {
-            this.claimGuard = new ClaimGuard(registry, new PermissionRules(), this.worldCache, this.supervisorCache,
-                    memberCache, this.cityTrustCache, guildProvider, this.roadPermitCache,
-                    getConfig().getBoolean("road-allow-fake-players", false),
-                    new java.util.HashSet<>(getConfig().getStringList("main-city-blocked-blocks")),
-                    new java.util.HashSet<>(getConfig().getStringList("road-permit.blocked-blocks")));
-            this.claimGuard.setCityPlotCache(cityPlotCache); // 主城子地块委托建造（null=功能关，主城仍只会长/受信可建）
-            this.claimGuard.setBuildCheckRegistry(buildCheckRegistry); // 第三方建造决策参与（PLAN_API.md Phase 4）
-            // 共享农场/偷菜等玩法已外移为附属 GuildShelterFarm（注册 BuildCheckProvider）；核心只留 members-farm flag 标记。
-            ManorLookup lookup = new ManorLookup(registry, manors, this.worldCache, cityFlagCache);
-            this.manorLookup = lookup;
-            this.interactionPolicy = new InteractionPolicy(claimGuard, lookup, buildCheckRegistry);
+        this.claimGuard = new ClaimGuard(registry, new PermissionRules(), this.worldCache, this.supervisorCache,
+                memberCache, this.cityTrustCache, guildProvider, this.roadPermitCache,
+                getConfig().getBoolean("road-allow-fake-players", false),
+                new java.util.HashSet<>(getConfig().getStringList("main-city-blocked-blocks")),
+                new java.util.HashSet<>(getConfig().getStringList("road-permit.blocked-blocks")));
+        this.claimGuard.setCityPlotCache(cityPlotCache); // 主城子地块委托建造（null=功能关，主城仍只会长/受信可建）
+        this.claimGuard.setBuildCheckRegistry(buildCheckRegistry); // 第三方建造决策参与（PLAN_API.md Phase 4）
+        // 共享农场/偷菜等玩法已外移为附属 GuildShelterFarm（注册 BuildCheckProvider）；核心只留 members-farm flag 标记。
+        ManorLookup lookup = new ManorLookup(registry, manors, this.worldCache, cityFlagCache);
+        this.manorLookup = lookup;
+        this.interactionPolicy = new InteractionPolicy(claimGuard, lookup, buildCheckRegistry);
 
-            getLogger().info("========== [启动诊断] 开始装配保护模块 ==========");
-            // 接缝：混合端注册原生 NeoForge 保护并返回 true → 跳过下面三个 Bukkit 监听；纯 Bukkit 返回 false。
-            boolean nativeProtection = bindings.registerNativeProtection(this);
-            if (nativeProtection) {
-                getLogger().info("[启动诊断] 混合端：已注册原生保护，跳过 Bukkit ManorProtection/Entity/Flag 监听。");
-            } else {
-                getServer().getPluginManager().registerEvents(new ManorProtectionListener(claimGuard, interactionPolicy), this);
-                getServer().getPluginManager().registerEvents(new ManorEntityListener(interactionPolicy), this);
-                getServer().getPluginManager().registerEvents(new ManorFlagListener(lookup), this);
-                getLogger().info("[启动诊断] 纯 Bukkit：已注册 ManorProtection/Entity/Flag 监听。");
-            }
-            getLogger().info("========== [启动诊断] 保护模块装配结束 ==========");
-
-            getServer().getPluginManager().registerEvents(new ManorFireListener(lookup), this);
-            getServer().getPluginManager().registerEvents(new ManorEnvListener(lookup), this);
-            getServer().getPluginManager().registerEvents(new ManorPlayerListener(lookup), this);
-            getServer().getPluginManager().registerEvents(new ManorCapListener(lookup, entityCensus), this);
-
-            EconomyPort economy = VaultEconomy.tryCreate(getLogger());
-            VisitCounter visitCounter = new VisitCounter(manors, getLogger());
-            new org.bukkit.scheduler.BukkitRunnable() {
-                @Override public void run() { visitCounter.flush(); }
-            }.runTaskTimer(this, 60L * 20, 60L * 20);
-
-            ManorAccessListener accessListener = new ManorAccessListener(lookup, economy, visitCounter, this.worldCache);
-            getServer().getPluginManager().registerEvents(accessListener, this);
-            command.setAccessListener(accessListener);
-            accessListener.setOpenPlots(command.openPlots());
-
-            getServer().getPluginManager().registerEvents(new ManorCommandListener(lookup), this);
-            getServer().getPluginManager().registerEvents(new Listener() {
-                @EventHandler
-                public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
-                    UUID id = event.getPlayer().getUniqueId();
-                    claimGuard.onPlayerQuit(id);
-                    supervisorCache.clearAll();
-                    worldCache.removePlayerRef(id);
-                }
-            }, this);
-            new ManorBuffTask(lookup).runTaskTimer(this, 20L, 20L);
-            getLogger().info("庄园 Flag 执行已启用（访问/增益走 Bukkit，氛围按载体分流）。");
-            new ManorParticleTask(lookup, registry, guilds).runTaskTimer(this, 10L, 10L);
-            getServer().getPluginManager().registerEvents(new GuildMotdListener(registry, guilds), this);
+        getLogger().info("========== [启动诊断] 开始装配保护模块 ==========");
+        // 接缝：混合端注册原生 NeoForge 保护并返回 true → 跳过下面三个 Bukkit 监听；纯 Bukkit 返回 false。
+        boolean nativeProtection = bindings.registerNativeProtection(this);
+        if (nativeProtection) {
+            getLogger().info("[启动诊断] 混合端：已注册原生保护，跳过 Bukkit ManorProtection/Entity/Flag 监听。");
         } else {
-            getLogger().info("领地保护已禁用。");
+            getServer().getPluginManager().registerEvents(new ManorProtectionListener(claimGuard, interactionPolicy), this);
+            getServer().getPluginManager().registerEvents(new ManorEntityListener(interactionPolicy), this);
+            getServer().getPluginManager().registerEvents(new ManorFlagListener(lookup), this);
+            getLogger().info("[启动诊断] 纯 Bukkit：已注册 ManorProtection/Entity/Flag 监听。");
         }
+        getLogger().info("========== [启动诊断] 保护模块装配结束 ==========");
+
+        getServer().getPluginManager().registerEvents(new ManorFireListener(lookup), this);
+        getServer().getPluginManager().registerEvents(new ManorEnvListener(lookup), this);
+        getServer().getPluginManager().registerEvents(new ManorPlayerListener(lookup), this);
+        getServer().getPluginManager().registerEvents(new ManorCapListener(lookup, entityCensus), this);
+
+        EconomyPort economy = VaultEconomy.tryCreate(getLogger());
+        VisitCounter visitCounter = new VisitCounter(manors, getLogger());
+        new org.bukkit.scheduler.BukkitRunnable() {
+            @Override public void run() { visitCounter.flush(); }
+        }.runTaskTimer(this, 60L * 20, 60L * 20);
+
+        ManorAccessListener accessListener = new ManorAccessListener(lookup, economy, visitCounter, this.worldCache);
+        getServer().getPluginManager().registerEvents(accessListener, this);
+        command.setAccessListener(accessListener);
+        accessListener.setOpenPlots(command.openPlots());
+
+        getServer().getPluginManager().registerEvents(new ManorCommandListener(lookup), this);
+        getServer().getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+                UUID id = event.getPlayer().getUniqueId();
+                claimGuard.onPlayerQuit(id);
+                supervisorCache.clearAll();
+                worldCache.removePlayerRef(id);
+            }
+        }, this);
+        new ManorBuffTask(lookup).runTaskTimer(this, 20L, 20L);
+        getLogger().info("庄园 Flag 执行已启用（访问/增益走 Bukkit，氛围按载体分流）。");
+        new ManorParticleTask(lookup, registry, guilds).runTaskTimer(this, 10L, 10L);
+        getServer().getPluginManager().registerEvents(new GuildMotdListener(registry, guilds), this);
 
         // 接公会插件
         boolean autoCreateCamp = getConfig().getBoolean("guild-hooks.auto-create-camp", false);
@@ -663,8 +659,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         command.setMapChannel(mapChannel); // 命令解锁后刷新地图高亮
 
         // ===== 启动横幅（彩色 logo + 信息汇总，载体一眼可辨）=====
-        String protectionDesc = !getConfig().getBoolean("protection", true) ? "已禁用"
-                : (bindings.isHybrid() ? "原生 NeoForge 事件" : "Bukkit 监听器");
+        String protectionDesc = bindings.isHybrid() ? "原生 NeoForge 事件" : "Bukkit 监听器";
         String schematicDesc = schematicStore != null
                 ? schematicStore.getClass().getSimpleName() : "未启用（无 WorldEdit/FAWE）";
         // 运行时统计：公会数（= 已注册公会世界）+ 庄园总数。
@@ -712,6 +707,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             // 旧 main-city.* → guild.main-city.*
             migrated |= copyInt(old, "main-city.initial-chunks", lv, "guild.main-city.initial-chunks");
             migrated |= copyInt(old, "main-city.max-chunks", lv, "guild.main-city.max-chunks");
+            migrated |= copySection(old, "manor-upgrade-commands", lv, "manor.upgrade-commands");
             if (migrated) {
                 try {
                     lv.save(file);
@@ -765,6 +761,17 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             return true;
         }
         return false;
+    }
+
+    /** 若源有该配置段则复制到目标。返回是否复制了。 */
+    private static boolean copySection(org.bukkit.configuration.file.FileConfiguration src, String srcKey,
+                                       org.bukkit.configuration.file.FileConfiguration dst, String dstKey) {
+        org.bukkit.configuration.ConfigurationSection section = src.getConfigurationSection(srcKey);
+        if (section == null) {
+            return false;
+        }
+        dst.set(dstKey, section);
+        return true;
     }
 
     /** GuildId → 对外 {@link org.windy.guildshelter.api.GuildRef}；worldName 用确定式 worldName(g)（解散后仍可得）。 */

@@ -1,5 +1,10 @@
 package org.windy.guildshelter.domain.rule;
 
+import org.windy.guildshelter.domain.layout.LayoutConfig;
+
+import java.util.Map;
+import java.util.TreeMap;
+
 /**
  * 两套<b>互相独立</b>的等级规则（纯逻辑，配置驱动）：
  *
@@ -11,15 +16,27 @@ package org.windy.guildshelter.domain.rule;
  * </ul>
  *
  * @param maxGuildLevel        公会最高等级
- * @param membersPerGuildLevel 公会每升 1 级放开多少成员名额（容量 = 等级 × 本值）
+ * @param membersPerGuildLevel 公会每升 1 级放开多少成员名额（容量 = 等级 × 本值），未配置显式时代表时使用
  * @param manorMaxLevelCap     庄园等级绝对上限（= 庄园从初始涨到物理满级所需的级数）
  */
-public record LevelRules(int maxGuildLevel, int membersPerGuildLevel, int manorMaxLevelCap) {
+public record LevelRules(int maxGuildLevel, int membersPerGuildLevel, int manorMaxLevelCap,
+                         Map<Integer, Integer> manorUnlockQuotas,
+                         Map<Integer, Integer> guildMemberCaps,
+                         Map<Integer, Integer> guildCityUnlockQuotas,
+                         Map<Integer, String> guildLevelNames) {
+
+    public LevelRules(int maxGuildLevel, int membersPerGuildLevel, int manorMaxLevelCap) {
+        this(maxGuildLevel, membersPerGuildLevel, manorMaxLevelCap, Map.of(), Map.of(), Map.of(), Map.of());
+    }
 
     public LevelRules {
         if (maxGuildLevel < 1 || membersPerGuildLevel < 1 || manorMaxLevelCap < 1) {
             throw new IllegalArgumentException("等级规则参数必须 ≥1");
         }
+        manorUnlockQuotas = Map.copyOf(manorUnlockQuotas == null ? Map.of() : manorUnlockQuotas);
+        guildMemberCaps = Map.copyOf(guildMemberCaps == null ? Map.of() : guildMemberCaps);
+        guildCityUnlockQuotas = Map.copyOf(guildCityUnlockQuotas == null ? Map.of() : guildCityUnlockQuotas);
+        guildLevelNames = Map.copyOf(guildLevelNames == null ? Map.of() : guildLevelNames);
     }
 
     /** 给定公会等级时允许的成员名额（容量）。公会升级让这个数变大 → 能进更多人。 */
@@ -27,7 +44,41 @@ public record LevelRules(int maxGuildLevel, int membersPerGuildLevel, int manorM
         if (guildLevel < 1) {
             throw new IllegalArgumentException("guildLevel 必须 ≥1");
         }
-        return guildLevel * membersPerGuildLevel;
+        Integer explicit = floorValue(guildMemberCaps, guildLevel);
+        return explicit != null ? explicit : guildLevel * membersPerGuildLevel;
+    }
+
+    /** 给定庄园等级时允许的已解锁 chunk 总数。优先 levels.yml 显式表，缺省回退旧线性公式。 */
+    public int manorQuotaCap(LayoutConfig layout, int manorLevel) {
+        int cap = layout.plotChunks() * layout.plotChunks();
+        Integer explicit = floorValue(manorUnlockQuotas, manorLevel);
+        if (explicit != null) {
+            return Math.min(Math.max(1, explicit), cap);
+        }
+        return layout.quotaAtLevel(manorLevel, manorMaxLevelCap);
+    }
+
+    /** 给定公会等级时允许的主城已解锁 chunk 总数。优先 levels.yml 显式时代表，缺省回退旧线性公式。 */
+    public int cityQuotaCap(LayoutConfig layout, int guildLevel) {
+        int cap = layout.mainCityMaxChunks() * layout.mainCityMaxChunks();
+        Integer explicit = floorValue(guildCityUnlockQuotas, guildLevel);
+        if (explicit != null) {
+            return Math.min(Math.max(1, explicit), cap);
+        }
+        return layout.cityQuotaAtLevel(guildLevel, maxGuildLevel);
+    }
+
+    /** 公会等级显示名；未配置时返回 LvN。 */
+    public String guildLevelName(int guildLevel) {
+        return guildLevelNames.getOrDefault(guildLevel, "Lv" + guildLevel);
+    }
+
+    private static Integer floorValue(Map<Integer, Integer> source, int level) {
+        if (source.isEmpty()) {
+            return null;
+        }
+        Map.Entry<Integer, Integer> floor = new TreeMap<>(source).floorEntry(level);
+        return floor != null ? floor.getValue() : null;
     }
 
     /** 庄园物理满级（与公会等级无关）。 */
@@ -44,8 +95,8 @@ public record LevelRules(int maxGuildLevel, int membersPerGuildLevel, int manorM
         return currentGuildLevel < maxGuildLevel;
     }
 
-    /** 默认：公会 5 级、每级放开 5 个成员名额（满级 25 人）、庄园物理满级 5。 */
+    /** 默认：公会 5 级、每级放开 5 个成员名额（满级 25 人）、庄园物理满级 20。 */
     public static LevelRules defaults() {
-        return new LevelRules(5, 5, 5);
+        return new LevelRules(5, 5, 20);
     }
 }

@@ -163,14 +163,11 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         return manors.findBySlot(gw.guild(), c.slot());
     }
 
-    /**
-     * 解析玩家"当前操作的自己的庄园"：多庄园开启→严格取脚下站的这块（须属于自己）；
-     * 关闭→回退 {@code findByOwnerAnywhere}（单庄园旧语义，零行为变化）。
-     * 编辑/查看类玩家命令（A 类）统一经此定位，是 Stage 1b 迁移的目标入口。
-     */
+    /** 解析玩家"当前操作的自己的庄园"：优先取脚下这块；不在自己的庄园内时回退默认/唯一庄园。 */
     private java.util.Optional<Manor> currentOwnManor(Player player) {
-        if (multiManor.enabled()) {
-            return manorAt(player).filter(m -> m.owner().uuid().equals(player.getUniqueId()));
+        java.util.Optional<Manor> here = manorAt(player).filter(m -> m.owner().uuid().equals(player.getUniqueId()));
+        if (here.isPresent()) {
+            return here;
         }
         return manors.findByOwnerAnywhere(PlayerRef.of(player.getUniqueId()));
     }
@@ -485,7 +482,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         GuildId guild = any.guild();
         java.util.List<Manor> mine = manors.findAllByOwner(guild, ref).stream()
                 .sorted(java.util.Comparator.comparingInt(Manor::slot)).toList();
-        int limit = multiManor.enabled() ? multiManor.limitFor(player) : 1;
+        int limit = multiManor.limitFor(player);
         String cap = limit == Integer.MAX_VALUE ? "∞" : String.valueOf(limit);
         sender.sendMessage("§6==== 我的庄园（" + mine.size() + "/" + cap + "）====");
         GuildWorld gw = guilds.find(guild).orElse(null);
@@ -501,7 +498,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§e#" + m.slot() + " §7Lv§f" + m.level() + coords
                     + (isDefault ? " §6★默认" : "") + " §7→ §f/gs home " + m.slot());
         }
-        if (multiManor.enabled() && mine.size() < limit) {
+        if (mine.size() < limit) {
             sender.sendMessage("§7站在空闲地皮上 §f/gs claim §7认领更多。");
         }
     }
@@ -1016,14 +1013,10 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         return economyCache;
     }
 
-    /** /gs claim：多庄园模式下，站在空闲地皮格上自助认领额外一块庄园（数量受权限节点 guildshelter.manors.&lt;N&gt; 封顶）。 */
+    /** /gs claim：站在空闲地皮格上自助认领庄园（数量受权限节点 guildshelter.manors.&lt;N&gt; 封顶）。 */
     private void claimSelf(CommandSender sender) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage(Messages.get("error.player_only"));
-            return;
-        }
-        if (!multiManor.enabled()) {
-            sender.sendMessage("§c本服未开启多庄园自助认领。");
             return;
         }
         GuildWorld gw = registry.get(player.getWorld().getName());
@@ -1041,7 +1034,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             return;
         }
         PlayerRef ref = PlayerRef.of(player.getUniqueId());
-        // 每玩家上限（权限节点 + config 兜底）
+        // 每玩家上限（权限节点 + config 兜底；默认 1）
         int limit = multiManor.limitFor(player);
         int owned = manors.countByOwner(gw.guild(), ref);
         if (owned >= limit) {
@@ -1099,7 +1092,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(Messages.get("info.plot_line", title, manor.level(), levels.manorMaxLevel(), side, side,
                 Flag.DONE.resolveBool(manor.flags()) ? Messages.get("info.done_status") : Messages.get("info.building_status")));
         int unlocked = manor.unlockedChunks().size();
-        int quota = manor.quotaCap(gw.layout(), levels.manorMaxLevel());
+        int quota = manor.quotaCap(gw.layout(), levels);
         sender.sendMessage(Messages.get("info.unlock_line", unlocked, unlocked, quota, quota - unlocked));
         sender.sendMessage(Messages.get("info.trusted_line", sizeOrNone(manor.coBuilders()), sizeOrNone(manor.members()), sizeOrNone(manor.denied())));
         String desc = Flag.DESCRIPTION.resolveString(manor.flags());
@@ -3215,22 +3208,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             }
             guild = myManor.guild();
         }
-        if (!multiManor.enabled()) {
-            // 单庄园：一人一块，目标已有则拒。
-            if (manors.findByOwner(guild, targetRef).isPresent()) {
-                sender.sendMessage(Messages.get("error.target_has_manor", target.getName(), ""));
-                return;
-            }
-            try {
-                Manor assigned = service.assignManor(guild, targetRef);
-                sender.sendMessage(Messages.get("success.grant", target.getName()));
-                org.windy.guildshelter.GuildShelterPlugin.sendWelcome(target, guild.value(), assigned.slot());
-            } catch (GuildFullException e) {
-                sender.sendMessage(Messages.get("error.guild_full", e.capacity()));
-            }
-            return;
-        }
-        // 多庄园：管理员给目标追加一块（认领下一个空闲 slot，绕过自助上限）。
+        // 管理员给目标追加一块（认领下一个空闲 slot，绕过自助权限上限）。
         int slot = manors.nextFreeSlot(guild);
         switch (service.claimManorAt(guild, targetRef, slot)) {
             case SUCCESS -> {

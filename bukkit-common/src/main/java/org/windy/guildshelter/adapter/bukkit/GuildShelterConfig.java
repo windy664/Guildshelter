@@ -101,6 +101,54 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
         return def;
     }
 
+    private static java.util.Map<Integer, Integer> levelIntMap(FileConfiguration cfg, String sectionPath, String key) {
+        java.util.Map<Integer, Integer> out = new java.util.HashMap<>();
+        org.bukkit.configuration.ConfigurationSection section =
+                cfg == null ? null : cfg.getConfigurationSection(sectionPath);
+        if (section == null) {
+            return out;
+        }
+        for (String levelKey : section.getKeys(false)) {
+            int level;
+            try {
+                level = Integer.parseInt(levelKey.trim());
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+            org.bukkit.configuration.ConfigurationSection row = section.getConfigurationSection(levelKey);
+            if (row != null && row.contains(key)) {
+                out.put(level, Math.max(1, row.getInt(key)));
+            }
+        }
+        return out;
+    }
+
+    private static java.util.Map<Integer, String> levelNameMap(FileConfiguration cfg, String sectionPath) {
+        java.util.Map<Integer, String> out = new java.util.HashMap<>();
+        org.bukkit.configuration.ConfigurationSection section =
+                cfg == null ? null : cfg.getConfigurationSection(sectionPath);
+        if (section == null) {
+            return out;
+        }
+        for (String levelKey : section.getKeys(false)) {
+            int level;
+            try {
+                level = Integer.parseInt(levelKey.trim());
+            } catch (NumberFormatException ignored) {
+                continue;
+            }
+            String name = section.getString(levelKey + ".name", "");
+            if (name != null && !name.isBlank()) {
+                out.put(level, name.trim());
+            }
+        }
+        return out;
+    }
+
+    private static int maxConfiguredLevel(java.util.Map<Integer, ?> map, int fallback) {
+        return map.keySet().stream().mapToInt(Integer::intValue).max().orElse(fallback);
+    }
+
     /**
      * @param cfg 主配置 config.yml
      * @param lv  等级系统配置 levels.yml（庄园/公会等级独立成文件）；读不到时回退 config.yml 旧键再回退硬默认。
@@ -144,16 +192,29 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cfg.getInt("advanced.base-y", 64),
                 cfg.getInt("advanced.margin-chunks", 2));
 
-        // 庄园等级数：服主直接配 manor.max-level（想几级几级）；额度从初始线性涨到满级整块。
+        java.util.Map<Integer, Integer> manorQuotas = levelIntMap(lv, "manor.levels", "unlock-chunks");
+        java.util.Map<Integer, Integer> guildMemberCaps = levelIntMap(lv, "guild.levels", "member-cap");
+        java.util.Map<Integer, Integer> guildCityQuotas = levelIntMap(lv, "guild.levels", "main-city-unlock-chunks");
+        java.util.Map<Integer, String> guildNames = levelNameMap(lv, "guild.levels");
+
+        // 庄园等级数：服主直接配 manor.max-level；也可由 manor.levels 最大键推导。缺省回退旧尺寸推导。
         // 缺省(<1)则回退按尺寸推导，兼容旧配置。
         int manorMaxLevel = lvl(lv, "manor.max-level", cfg, "member-plot.max-level", 0);
         if (manorMaxLevel < 1) {
             manorMaxLevel = plotGrow > 0 ? (plotMax - plotInitial) / plotGrow + 1 : 1;
         }
+        manorMaxLevel = Math.max(manorMaxLevel, maxConfiguredLevel(manorQuotas, manorMaxLevel));
+        int guildMaxLevel = lvl(lv, "guild.max-level", cfg, "guild.max-level", 5);
+        guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildMemberCaps, guildMaxLevel));
+        guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildCityQuotas, guildMaxLevel));
         LevelRules levels = new LevelRules(
-                lvl(lv, "guild.max-level", cfg, "guild.max-level", 5),
+                guildMaxLevel,
                 lvl(lv, "guild.members-per-level", cfg, "guild.members-per-level", 5),
-                Math.max(1, manorMaxLevel));
+                Math.max(1, manorMaxLevel),
+                manorQuotas,
+                guildMemberCaps,
+                guildCityQuotas,
+                guildNames);
 
         TerrainPrepMode prep;
         try {

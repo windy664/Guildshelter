@@ -68,17 +68,12 @@ class LayoutCalculatorTest {
     }
 
     @Test
-    void activeRegionWithinPlotAnchoredAtMinCorner() {
+    void activeRegionCompatibilityReturnsWholePlot() {
         for (int slot = 0; slot < 20; slot++) {
             ChunkRegion plot = calc.plotRegion(slot);
-            int[] expectedSize = {2, 3, 4, 4, 4}; // level 1..5, 封顶 P=4
-            for (int level = 1; level <= 5; level++) {
+            for (int level = 1; level <= 20; level++) {
                 ChunkRegion active = calc.activeRegion(slot, level);
-                assertEquals(expectedSize[level - 1], active.widthChunks(), "level " + level + " 实占尺寸");
-                assertTrue(contains(plot, active), "实占应 ⊆ 地皮 @ slot " + slot + " level " + level);
-                // 半螺旋式：锚定在地皮最小角，从角落向外扩
-                assertEquals(plot.minChunkX(), active.minChunkX(), "实占应锚定地皮最小角X @ slot " + slot);
-                assertEquals(plot.minChunkZ(), active.minChunkZ(), "实占应锚定地皮最小角Z @ slot " + slot);
+                assertEquals(plot, active, "等级不再改变物理范围 @ slot " + slot + " level " + level);
             }
         }
     }

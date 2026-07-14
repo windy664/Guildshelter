@@ -329,7 +329,7 @@ public final class GuildService {
             lastCityUnlockResult = UnlockResult.ALREADY_UNLOCKED;
             return null;
         }
-        if (gw.cityUnlockedChunks().size() >= gw.cityQuotaCap(levels.maxGuildLevel())) {
+        if (gw.cityUnlockedChunks().size() >= gw.cityQuotaCap(levels)) {
             lastCityUnlockResult = UnlockResult.NO_QUOTA;
             return null;
         }
@@ -359,7 +359,7 @@ public final class GuildService {
 
     /** 主城剩余可解锁额度（额度上限 − 已解锁数）。 */
     public int cityRemainingQuota(GuildWorld gw) {
-        return Math.max(0, gw.cityQuotaCap(levels.maxGuildLevel()) - gw.cityUnlockedChunks().size());
+        return Math.max(0, gw.cityQuotaCap(levels) - gw.cityUnlockedChunks().size());
     }
 
     /**
@@ -374,7 +374,7 @@ public final class GuildService {
             return -1;
         }
         int cap = gw.layout().mainCityMaxChunks() * gw.layout().mainCityMaxChunks();
-        int base = add ? gw.cityQuotaCap(levels.maxGuildLevel()) : 0;
+        int base = add ? gw.cityQuotaCap(levels) : 0;
         int newQuota = Math.min(Math.max(0, base + amount), cap);
         GuildWorld updated = gw.withCityQuotaOverride(newQuota);
         guilds.save(updated);
@@ -785,7 +785,7 @@ public final class GuildService {
         if (manor.isUnlocked(dx, dz)) {
             return UnlockResult.ALREADY_UNLOCKED;
         }
-        if (manor.unlockedChunks().size() >= manor.quotaCap(gw.layout(), levels.manorMaxLevel())) {
+        if (manor.unlockedChunks().size() >= manor.quotaCap(gw.layout(), levels)) {
             return UnlockResult.NO_QUOTA;
         }
         if (!(manor.isUnlocked(dx - 1, dz) || manor.isUnlocked(dx + 1, dz)
@@ -808,7 +808,7 @@ public final class GuildService {
 
     /** 该庄园剩余可解锁额度（总额度 − 已解锁数，≥0）。 */
     public int remainingQuota(GuildWorld gw, Manor manor) {
-        return Math.max(0, manor.quotaCap(gw.layout(), levels.manorMaxLevel()) - manor.unlockedChunks().size());
+        return Math.max(0, manor.quotaCap(gw.layout(), levels) - manor.unlockedChunks().size());
     }
 
     /**
@@ -838,7 +838,7 @@ public final class GuildService {
             return -1;
         }
         int cap = gw.layout().plotChunks() * gw.layout().plotChunks();
-        int base = add ? manor.quotaCap(gw.layout(), levels.manorMaxLevel()) : 0;
+        int base = add ? manor.quotaCap(gw.layout(), levels) : 0;
         int newQuota = Math.min(Math.max(0, base + amount), cap);
         java.util.Map<String, String> nf = new java.util.HashMap<>(manor.flags());
         nf.put(Manor.QUOTA_FLAG, String.valueOf(newQuota));

@@ -16,7 +16,7 @@ import java.util.UUID;
  * {@link ManorUpgradeHook} 的 config 驱动实现：庄园升到<b>对应等级</b>时，由控制台执行该等级配的<b>对应命令</b>。
  *
  * <p>只执行<b>升到的那一级</b>的命令（不累加更低等级）。命令以控制台身份分派，故 give/cmi/lp 等任意插件命令均可挂接。
- * 配置见 {@code config.yml} 的 {@code manor-upgrade-commands.levels}（键=目标等级，值=命令列表，命令不带前导 {@code /}）。
+ * 配置见 {@code levels.yml} 的 {@code manor.upgrade-commands.levels}（键=目标等级，值=命令列表，命令不带前导 {@code /}）。
  *
  * <p>占位符：{@code %player%}(庄主名) {@code %uuid%} {@code %guild%}(公会 ID) {@code %level%}(新等级)
  * {@code %old_level%}(旧等级) {@code %slot%}。
@@ -33,10 +33,14 @@ public final class ManorUpgradeCommandHook implements ManorUpgradeHook {
     }
 
     /**
-     * 从 config 构建；未启用或没有任何等级配命令时返回 {@code null}（调用方据此跳过注入）。
+     * 从 levels.yml 构建；未启用或没有任何等级配命令时返回 {@code null}（调用方据此跳过注入）。
+     * 兼容旧 config.yml 的 manor-upgrade-commands。
      */
-    public static ManorUpgradeCommandHook fromConfig(JavaPlugin plugin) {
-        ConfigurationSection root = plugin.getConfig().getConfigurationSection("manor-upgrade-commands");
+    public static ManorUpgradeCommandHook fromConfig(JavaPlugin plugin, org.bukkit.configuration.file.FileConfiguration levelsConfig) {
+        ConfigurationSection root = levelsConfig == null ? null : levelsConfig.getConfigurationSection("manor.upgrade-commands");
+        if (root == null) {
+            root = plugin.getConfig().getConfigurationSection("manor-upgrade-commands");
+        }
         if (root == null || !root.getBoolean("enabled", false)) {
             return null;
         }
@@ -50,7 +54,7 @@ public final class ManorUpgradeCommandHook implements ManorUpgradeHook {
             try {
                 level = Integer.parseInt(key.trim());
             } catch (NumberFormatException e) {
-                plugin.getLogger().warning("manor-upgrade-commands.levels 含非法等级键 '" + key + "'，已跳过。");
+                plugin.getLogger().warning("manor.upgrade-commands.levels 含非法等级键 '" + key + "'，已跳过。");
                 continue;
             }
             List<String> cmds = levels.getStringList(key);

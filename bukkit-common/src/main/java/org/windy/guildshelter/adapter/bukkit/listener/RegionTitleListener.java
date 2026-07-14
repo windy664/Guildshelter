@@ -105,7 +105,7 @@ public final class RegionTitleListener implements Listener {
                 // 走进了某块庄园的未解锁区。是自己的庄园 → 标题提示 + 聊天栏给可点击的【解锁】按钮（扣额度）。
                 boolean own = manor.owner().uuid().equals(player.getUniqueId());
                 if (own) {
-                    int remain = Math.max(0, manor.quotaCap(gw.layout(), levels.manorMaxLevel()) - manor.unlockedChunks().size());
+                    int remain = Math.max(0, manor.quotaCap(gw.layout(), levels) - manor.unlockedChunks().size());
                     player.sendTitle("§e§l⚠ 未解锁区", "§7剩余额度 §f" + remain
                             + (remain > 0 ? " §7· 看聊天栏点击解锁" : " §7· §c额度已用尽"), 5, 40, 10);
                     sendUnlockButton(player, remain);
@@ -142,7 +142,7 @@ public final class RegionTitleListener implements Listener {
             try {
                 var ref = org.windy.guildshelter.domain.model.PlayerRef.of(player.getUniqueId());
                 if (guildProvider.isGuildAdmin(ref, gw.guild()) || player.isOp()) {
-                    int remain = Math.max(0, gw.cityQuotaCap(levels.maxGuildLevel())
+                    int remain = Math.max(0, gw.cityQuotaCap(levels)
                             - gw.cityUnlockedChunks().size());
                     player.sendTitle("§e§l⚠ 主城未解锁区", "§7剩余额度 §f" + remain
                             + (remain > 0 ? " §7· 看聊天栏点击解锁" : " §7· §c额度已用尽"), 5, 40, 10);

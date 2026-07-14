@@ -25,26 +25,30 @@ class PermissionRulesTest {
     private final PlayerRef owner = PlayerRef.of(UUID.randomUUID());
     private final PlayerRef other = PlayerRef.of(UUID.randomUUID());
 
-    // base=1：slot0 格=toCell(1)=(1,0) → 地皮 chunk [5..8]×[0..3]；1级实占=最小角 [5..6]×[0..1]
+    // base=1：slot0 格=toCell(1)=(1,0) → 地皮 chunk [5..8]×[0..3]。
     private IntFunction<Manor> only(int slot, Manor manor) {
         return s -> s == slot ? manor : null;
     }
 
+    private Manor unlockedForOwner() {
+        return Manor.create(0, guild, owner).withUnlockedChunks(Set.of(Manor.packOffset(1, 1)));
+    }
+
     @Test
     void ownerCanBuildInActiveArea() {
-        Manor m = Manor.create(0, guild, owner);
+        Manor m = unlockedForOwner();
         assertTrue(rules.canModify(layout,owner, true, only(0, m), 6, 1));
     }
 
     @Test
     void ownerCannotBuildInReservedButInactiveArea() {
-        Manor m = Manor.create(0, guild, owner); // 1级, 实占只有角落2×2 [5..6]×[0..1]
+        Manor m = unlockedForOwner();
         assertFalse(rules.canModify(layout, owner, true, only(0, m), 8, 3)); // 满级地皮远角,未解锁
     }
 
     @Test
     void coBuilderCanBuildStrangerCannot() {
-        Manor m = new Manor(0, guild, owner, 1, Set.of(other));
+        Manor m = unlockedForOwner().withCoBuilders(Set.of(other));
         assertTrue(rules.canModify(layout,other, true, only(0, m), 6, 1)); // 共建人
         PlayerRef stranger = PlayerRef.of(UUID.randomUUID());
         assertFalse(rules.canModify(layout,stranger, true, only(0, m), 6, 1));
@@ -52,7 +56,7 @@ class PermissionRulesTest {
 
     @Test
     void nonGuildMemberDeniedEverywhere() {
-        Manor m = Manor.create(0, guild, owner);
+        Manor m = unlockedForOwner();
         assertFalse(rules.canModify(layout,owner, false, only(0, m), 6, 1)); // 不在本公会
         assertFalse(rules.canModify(layout,owner, false, only(0, m), 0, 0));   // 连主城也不行
     }

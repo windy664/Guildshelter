@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * 多庄园设置 + 每玩家庄园上限解析（权限节点 + config 默认值兜底）。
+ * 每玩家庄园上限解析（权限节点 + config 默认值兜底）。
  *
  * <p>上限来源：
  * <ul>
@@ -14,19 +14,18 @@ import org.bukkit.plugin.Plugin;
  * </ul>
  * 最终取 <b>节点值与 default-limit 的较大者</b>（节点是"提升"语义，不会因没配节点而低于默认）。
  *
- * <p>{@code enabled=false}（默认）时整套多庄园行为关闭，命令层维持"一人一庄园"旧逻辑。
+ * <p>默认上限为 1；给玩家 {@code guildshelter.manors.<N>} 或 {@code guildshelter.manors.unlimited}
+ * 即可允许其在同一公会拥有更多庄园。
  */
 public final class MultiManorSettings {
 
     private static final String NODE_PREFIX = "guildshelter.manors.";
 
-    private final boolean enabled;
     private final int defaultLimit;
     private final int maxProbe;
     private final double claimCost;
 
-    public MultiManorSettings(boolean enabled, int defaultLimit, int maxProbe, double claimCost) {
-        this.enabled = enabled;
+    public MultiManorSettings(int defaultLimit, int maxProbe, double claimCost) {
         this.defaultLimit = Math.max(1, defaultLimit);
         this.maxProbe = Math.max(1, maxProbe);
         this.claimCost = Math.max(0, claimCost);
@@ -35,15 +34,9 @@ public final class MultiManorSettings {
     public static MultiManorSettings fromConfig(Plugin plugin) {
         var cfg = plugin.getConfig();
         return new MultiManorSettings(
-                cfg.getBoolean("multi-manor.enabled", false),
                 cfg.getInt("multi-manor.default-limit", 1),
                 cfg.getInt("multi-manor.max-probe", 64),
                 cfg.getDouble("multi-manor.claim-cost", 0));
-    }
-
-    /** 多庄园是否启用。关闭时命令层走单庄园旧路径。 */
-    public boolean enabled() {
-        return enabled;
     }
 
     /** 自助认领花费（需 Vault，0=免费）。 */

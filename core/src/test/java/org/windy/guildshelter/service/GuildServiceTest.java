@@ -97,8 +97,10 @@ class GuildServiceTest {
         worlds.originZ = -3;
         service.createGuild(g, 1L);
         service.assignManor(g, player());
-        ChunkRegion layoutActive = layout.activeRegion(0, 1);
-        ChunkRegion expected = layoutActive.shift(10, -3);
+        ChunkRegion plot = layout.plotRegion(0);
+        int side = LayoutConfig.defaults().initialUnlockSide();
+        ChunkRegion expected = new ChunkRegion(plot.minChunkX(), plot.minChunkZ(),
+                plot.minChunkX() + side - 1, plot.minChunkZ() + side - 1).shift(10, -3);
         assertEquals(expected, terrain.calls.get(0).region);
     }
 
@@ -121,12 +123,11 @@ class GuildServiceTest {
         service.createGuild(g, 1L); // 公会仍 1 级
         PlayerRef p = player();
         service.assignManor(g, p); // 庄园 1 级
-        // 庄园升级是成员自己的事，与公会等级无关：1 级公会也能一路升到物理满级(默认 5)。
-        assertTrue(service.upgradeManor(g, p));  // ->2
-        assertTrue(service.upgradeManor(g, p));  // ->3
-        assertTrue(service.upgradeManor(g, p));  // ->4
-        assertTrue(service.upgradeManor(g, p));  // ->5
-        assertEquals(5, manors.findByOwner(g, p).orElseThrow().level());
+        // 庄园升级是成员自己的事，与公会等级无关：1 级公会也能一路升到物理满级(默认 20)。
+        for (int level = 2; level <= 20; level++) {
+            assertTrue(service.upgradeManor(g, p));
+        }
+        assertEquals(20, manors.findByOwner(g, p).orElseThrow().level());
         assertFalse(service.upgradeManor(g, p)); // 已满级，不能再升
     }
 

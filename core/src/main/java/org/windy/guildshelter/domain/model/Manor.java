@@ -1,6 +1,7 @@
 package org.windy.guildshelter.domain.model;
 
 import org.windy.guildshelter.domain.layout.LayoutConfig;
+import org.windy.guildshelter.domain.rule.LevelRules;
 
 import java.util.Map;
 import java.util.Objects;
@@ -71,6 +72,20 @@ public record Manor(int slot, GuildId guild, PlayerRef owner, int level,
             }
         }
         return Math.min(layout.quotaAtLevel(level, maxLevel), cap);
+    }
+
+    /** 同 {@link #quotaCap(LayoutConfig, int)}，但优先使用 levels.yml 的显式每级额度表。 */
+    public int quotaCap(LayoutConfig layout, LevelRules levels) {
+        int cap = layout.plotChunks() * layout.plotChunks();
+        String s = flags.get(QUOTA_FLAG);
+        if (s != null) {
+            try {
+                return Math.min(Math.max(0, Integer.parseInt(s.trim())), cap);
+            } catch (NumberFormatException ignored) {
+                // 坏值 → 回退按等级
+            }
+        }
+        return Math.min(levels.manorQuotaCap(layout, level), cap);
     }
 
     /** 把庄园内部偏移 (dx,dz)（均 0..plotChunks-1，<1024）打包成单个 int：高位 dx，低位 dz。 */

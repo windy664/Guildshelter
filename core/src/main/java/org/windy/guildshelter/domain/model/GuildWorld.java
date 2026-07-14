@@ -1,6 +1,7 @@
 package org.windy.guildshelter.domain.model;
 
 import org.windy.guildshelter.domain.layout.LayoutConfig;
+import org.windy.guildshelter.domain.rule.LevelRules;
 
 import java.util.Objects;
 import java.util.Set;
@@ -60,6 +61,15 @@ public record GuildWorld(GuildId guild, String worldName, long seed,
             return Math.min(cityQuotaOverride, cap);
         }
         return Math.min(layout.cityQuotaAtLevel(guildLevel, maxGuildLevel), cap);
+    }
+
+    /** 同 {@link #cityQuotaCap(int)}，但优先使用 levels.yml 的显式公会时代表。 */
+    public int cityQuotaCap(LevelRules levels) {
+        int cap = layout.mainCityMaxChunks() * layout.mainCityMaxChunks();
+        if (cityQuotaOverride >= 0) {
+            return Math.min(cityQuotaOverride, cap);
+        }
+        return Math.min(levels.cityQuotaCap(layout, guildLevel), cap);
     }
 
     /** 兼容旧签名（12 参，无 cityUnlockedChunks/cityQuotaOverride）。 */
