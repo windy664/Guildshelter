@@ -6,7 +6,7 @@ import org.windy.guildshelter.domain.rule.quota.ManorQuotaKey;
 /**
  * 庄园「优化量」限额的固定种类——{@link ManorQuotaKey} 的枚举实现。每一类都遵循统一配额模型：
  * <ul>
- *   <li><b>等级基础值</b>——config 的 base→max 随<b>庄园等级</b>线性缩放；</li>
+ *   <li><b>等级基础值</b>——levels.yml 的 manor.limits 按<b>庄园等级</b>给出显式表；</li>
  *   <li><b>管理员增量</b>——存庄园 flags 的内部键 {@link #bonusFlagKey()}（{@code _lim_<kind>}，下划线前缀不进
  *       {@code /gs flag} 列表），由 {@code /gs admin limit} 设置，让付费玩家单方面加量；</li>
  *   <li><b>玩家自调 cap</b>（仅实体类有）——既存的 {@link #ownerFlag()}（如 {@link Flag#ANIMAL_CAP}）。</li>

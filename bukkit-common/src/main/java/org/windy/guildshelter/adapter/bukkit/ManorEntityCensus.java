@@ -103,10 +103,65 @@ public final class ManorEntityCensus {
         if (gw == null) {
             return Census.EMPTY;
         }
-        ChunkRegion region = new LayoutCalculator(gw.layout())
-                .activeRegion(manor.slot(), manor.level())
-                .shift(gw.originChunkX(), gw.originChunkZ());
-        return countRegion(world, region, quotas == null ? java.util.Set.of() : quotas.machineIds());
+        return countManorChunks(world, gw, manor, quotas == null ? java.util.Set.of() : quotas.machineIds(),
+                true, true);
+    }
+
+    /**
+     * 放置检查专用：只统计方块实体/机器，不扫实体列表，不走 TTL。
+     * 这样连续放置时不会用旧缓存放超，也避免每次机器放置都顺便遍历生物/掉落物。
+     */
+    private Census countTilesNow(World world, Manor manor) {
+        GuildWorld gw = registry.get(world.getName());
+        if (gw == null) {
+            return Census.EMPTY;
+        }
+        return countManorChunks(world, gw, manor, quotas == null ? java.util.Set.of() : quotas.machineIds(),
+                false, true);
+    }
+
+    /** 统计庄园已解锁 chunk；按调用需要选择是否统计实体、方块实体。 */
+    private Census countManorChunks(World world, GuildWorld gw, Manor manor, java.util.Set<String> machineIds,
+                                    boolean countEntities, boolean countTiles) {
+        ChunkRegion plot = new LayoutCalculator(gw.layout()).plotRegion(manor.slot());
+        int animals = 0, hostiles = 0, other = 0, vehicles = 0, tileEntities = 0, droppedItems = 0;
+        Map<String, Integer> machineCounts = machineIds.isEmpty() ? Map.of() : new HashMap<>();
+        for (int packed : manor.unlockedChunks()) {
+            int cx = plot.minChunkX() + Manor.unpackDx(packed) + gw.originChunkX();
+            int cz = plot.minChunkZ() + Manor.unpackDz(packed) + gw.originChunkZ();
+            if (!world.isChunkLoaded(cx, cz)) {
+                continue;
+            }
+            org.bukkit.Chunk chunk = world.getChunkAt(cx, cz);
+            if (countEntities) {
+                for (Entity e : chunk.getEntities()) {
+                    if (e instanceof Item) {
+                        droppedItems++;
+                        continue;
+                    }
+                    ManorEntityClass c = classify(e);
+                    if (c == null) continue;
+                    switch (c) {
+                        case ANIMAL -> animals++;
+                        case HOSTILE -> hostiles++;
+                        case OTHER_MOB -> other++;
+                        case VEHICLE -> vehicles++;
+                    }
+                }
+            }
+            if (countTiles) {
+                for (BlockState state : chunk.getTileEntities()) {
+                    tileEntities++;
+                    if (!machineIds.isEmpty()) {
+                        String id = state.getType().getKey().toString();
+                        if (machineIds.contains(id)) {
+                            machineCounts.merge(id, 1, Integer::sum);
+                        }
+                    }
+                }
+            }
+        }
+        return new Census(animals, hostiles, other, vehicles, tileEntities, droppedItems, machineCounts);
     }
 
     /** 统计任意 chunk 范围内已加载 chunk 的各类实体/方块实体（庄园与主城共用）。{@code machineIds}=要按 id 计数的机器集合。 */
@@ -178,17 +233,26 @@ public final class ManorEntityCensus {
      * 两载体（Bukkit {@code ManorCapListener} / NeoForge {@code NeoForgeProtection}）共用，决策只此一处。
      */
     public Denial placementDenial(World world, Manor manor, String blockId) {
+        Census tileCounts = null;
         // 机器配额
         if (blockId != null && !blockId.isEmpty() && quotas.hasMachine(blockId)) {
             int cap = quotas.effectiveCap(manor, new MachineKey(blockId));
-            if (cap >= 0 && countAtCached(world, manor).machineCount(blockId) >= cap) {
-                return new Denial("error.machine_cap_reached", new Object[]{quotas.display(blockId)});
+            if (cap >= 0) {
+                tileCounts = countTilesNow(world, manor);
+            }
+            if (cap >= 0 && tileCounts.machineCount(blockId) >= cap) {
+                return new Denial("error.machine_cap_reached", new Object[]{BlockDisplayNames.display(blockId)});
             }
         }
         // 方块实体总数
         int tileCap = quotas.effectiveCap(manor, OptimizationLimit.TILES);
-        if (tileCap >= 0 && countAtCached(world, manor).tileEntities() >= tileCap) {
-            return new Denial("error.tile_cap_reached", new Object[0]);
+        if (tileCap >= 0) {
+            if (tileCounts == null) {
+                tileCounts = countTilesNow(world, manor);
+            }
+            if (tileCounts.tileEntities() >= tileCap) {
+                return new Denial("error.tile_cap_reached", new Object[0]);
+            }
         }
         return null;
     }

@@ -25,10 +25,10 @@ public final class GridAsciiMap {
     /**
      * @param occupiedSlots     已被占用的成员 slot（来自实际庄园记录）
      * @param capacity          当前公会等级的名额容量
-     * @param currentCityChunks 当前公会等级下主城的实占边长（chunk）：仅表头显示
+     * @param currentCityQuota 当前公会等级下主城的解锁额度（chunk）：仅表头显示
      */
     public static List<String> render(LayoutCalculator layout, GuildWorld gw,
-                                      Set<Integer> occupiedSlots, int capacity, int currentCityChunks) {
+                                      Set<Integer> occupiedSlots, int capacity, int currentCityQuota) {
         int pitch = layout.pitchChunks();
         // 窗口按容量画(显示空闲名额 +)，但"边界半径"标签用真实自适应边界(随实际成员逐环生长 + 1 环缓冲)。
         int reserved = Math.max(gw.allocatedSlots(), capacity);
@@ -43,7 +43,7 @@ public final class GridAsciiMap {
         List<String> lines = new ArrayList<>();
         lines.add("== 公会营地 " + gw.worldName() + " 区块图(1字符=" + (step == 1 ? "1" : step + "x" + step) + " chunk) ==");
         lines.add("  等级 " + gw.guildLevel() + " | 名额容量 " + capacity
-                + " | 已占 " + occupiedSlots.size() + " | 主城 " + currentCityChunks + " chunk"
+                + " | 已占 " + occupiedSlots.size() + " | 主城额度 " + currentCityQuota + " chunk"
                 + " | 边界半径 " + borderR + " 格" + (r != borderR ? "(容量窗口 " + r + ")" : ""));
         lines.add("  图例: C=主城  #=已占庄园  +=空闲名额  .=路  (空白)=未开发/容量外");
         for (int cz = minC; cz <= maxC; cz += step) {
@@ -83,7 +83,7 @@ public final class GridAsciiMap {
      * {@code hereX/hereZ} 为玩家当前所在 chunk（布局坐标），在图上以高亮白块标出；传 Integer.MIN_VALUE 则不标。
      */
     public static List<String> renderColored(LayoutCalculator layout, GuildWorld gw,
-                                             Set<Integer> occupiedSlots, int capacity, int currentCityChunks,
+                                             Set<Integer> occupiedSlots, int capacity, int currentCityQuota,
                                              int hereX, int hereZ) {
         int pitch = layout.pitchChunks();
         int reserved = Math.max(gw.allocatedSlots(), capacity);
@@ -96,7 +96,7 @@ public final class GridAsciiMap {
         List<String> lines = new ArrayList<>();
         lines.add("§6§l━━ §e" + gw.worldName() + " §7营地地图 §6§l━━");
         lines.add("§7等级§f " + gw.guildLevel() + " §8| §7已占§a " + occupiedSlots.size()
-                + "§7/§f" + capacity + " §8| §7主城§e " + currentCityChunks + "ch"
+                + "§7/§f" + capacity + " §8| §7主城额度§e " + currentCityQuota + "ch"
                 + (step > 1 ? " §8| §71格=" + step + "ch" : ""));
         for (int cz = minC; cz <= maxC; cz += step) {
             StringBuilder sb = new StringBuilder(" ");

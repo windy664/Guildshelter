@@ -57,7 +57,7 @@ public record Manor(int slot, GuildId guild, PlayerRef owner, int level,
      * 该庄园当前<b>解锁额度上限</b>（最多能解锁多少个 chunk）：
      * <ul>
      *   <li>管理员用 {@code /gs admin quota} 设过 → 用其值；</li>
-     *   <li>没设过 → 回退按等级算 {@link LayoutConfig#quotaAtLevel}（兼容旧庄园，平滑过渡）。</li>
+     *   <li>没设过 → 回退内置 1-20 级额度表（兼容旧调用，平滑过渡）。</li>
      * </ul>
      * 一律封顶 <b>chunk 上限</b> {@code plotChunks²}（单块 plotRegion 面积，解锁不可能超出它）。
      */
@@ -71,7 +71,7 @@ public record Manor(int slot, GuildId guild, PlayerRef owner, int level,
                 // 坏值 → 回退按等级
             }
         }
-        return Math.min(layout.quotaAtLevel(level, maxLevel), cap);
+        return Math.min(LevelRules.defaults().manorQuotaCap(layout, level), cap);
     }
 
     /** 同 {@link #quotaCap(LayoutConfig, int)}，但优先使用 levels.yml 的显式每级额度表。 */

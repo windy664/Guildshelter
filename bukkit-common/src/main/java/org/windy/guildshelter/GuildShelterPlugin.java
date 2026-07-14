@@ -697,13 +697,10 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             org.bukkit.configuration.file.FileConfiguration old = getConfig();
             boolean migrated = false;
             // 旧 member-plot.* → manor.*
-            migrated |= copyInt(old, "member-plot.max-level", lv, "manor.max-level");
             migrated |= copyInt(old, "member-plot.initial-chunks", lv, "manor.initial-chunks");
             migrated |= copyInt(old, "member-plot.max-chunks", lv, "manor.max-chunks");
-            migrated |= copyInt(old, "member-plot.grow-per-level", lv, "manor.grow-per-level");
             // 旧 guild.* → guild.*（键名不变）
             migrated |= copyInt(old, "guild.max-level", lv, "guild.max-level");
-            migrated |= copyInt(old, "guild.members-per-level", lv, "guild.members-per-level");
             // 旧 main-city.* → guild.main-city.*
             migrated |= copyInt(old, "main-city.initial-chunks", lv, "guild.main-city.initial-chunks");
             migrated |= copyInt(old, "main-city.max-chunks", lv, "guild.main-city.max-chunks");

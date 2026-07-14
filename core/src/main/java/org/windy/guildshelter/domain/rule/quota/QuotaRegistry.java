@@ -25,22 +25,19 @@ public final class QuotaRegistry {
 
     /** key.id() → 有序(等级 → 上限)。 */
     private final Map<String, NavigableMap<Integer, Integer>> perLevel;
-    /** 机器 id → 展示名（仅机器有）。 */
-    private final Map<String, String> display;
     /** 属于「机器」的 id 子集（用于方块实体计数与命令校验）。 */
     private final Set<String> machineIds;
 
     public QuotaRegistry(Map<String, ? extends Map<Integer, Integer>> perLevel,
-                         Map<String, String> display, Set<String> machineIds) {
+                         Set<String> machineIds) {
         Map<String, NavigableMap<Integer, Integer>> copy = new HashMap<>();
         perLevel.forEach((k, v) -> copy.put(k, Collections.unmodifiableNavigableMap(new TreeMap<>(v))));
         this.perLevel = Map.copyOf(copy);
-        this.display = Map.copyOf(display);
         this.machineIds = Set.copyOf(machineIds);
     }
 
     public static QuotaRegistry empty() {
-        return new QuotaRegistry(Map.of(), Map.of(), Set.of());
+        return new QuotaRegistry(Map.of(), Set.of());
     }
 
     // ── 元信息 ────────────────────────────────────────────────────────────────
@@ -59,12 +56,6 @@ public final class QuotaRegistry {
     public boolean isConfigured(ManorQuotaKey key) {
         NavigableMap<Integer, Integer> m = perLevel.get(key.id());
         return m != null && !m.isEmpty();
-    }
-
-    /** 展示名；非机器或未配置则回退 id 本身。 */
-    public String display(String id) {
-        String key = id == null ? "" : id.toLowerCase(Locale.ROOT);
-        return display.getOrDefault(key, id);
     }
 
     // ── 解析 ──────────────────────────────────────────────────────────────────

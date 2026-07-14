@@ -157,7 +157,6 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
     public static GuildShelterConfig from(FileConfiguration cfg, FileConfiguration lv, FileConfiguration serverCfg) {
         int plotInitial = lvl(lv, "manor.initial-chunks", cfg, "member-plot.initial-chunks", 6);
         int plotMax = lvl(lv, "manor.max-chunks", cfg, "member-plot.max-chunks", 15);
-        int plotGrow = lvl(lv, "manor.grow-per-level", cfg, "member-plot.grow-per-level", 1);
 
         // 主城解锁额度边长：新键 *-unlock-chunks，向后兼容旧键 *-chunks 与 config.yml。
         // ⚠ 这只是"会长能在中心一格里解锁建造多少格"，主城【物理大小】恒等于中心一格 = plotMax（满级庄园大小）。
@@ -188,7 +187,7 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cityInitial,
                 cityMax,
                 plotInitial,                                   // 庄园初始边长
-                plotGrow,
+                0,
                 cfg.getInt("advanced.base-y", 64),
                 cfg.getInt("advanced.margin-chunks", 2));
 
@@ -197,19 +196,16 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
         java.util.Map<Integer, Integer> guildCityQuotas = levelIntMap(lv, "guild.levels", "main-city-unlock-chunks");
         java.util.Map<Integer, String> guildNames = levelNameMap(lv, "guild.levels");
 
-        // 庄园等级数：服主直接配 manor.max-level；也可由 manor.levels 最大键推导。缺省回退旧尺寸推导。
-        // 缺省(<1)则回退按尺寸推导，兼容旧配置。
-        int manorMaxLevel = lvl(lv, "manor.max-level", cfg, "member-plot.max-level", 0);
-        if (manorMaxLevel < 1) {
-            manorMaxLevel = plotGrow > 0 ? (plotMax - plotInitial) / plotGrow + 1 : 1;
-        }
+        // 庄园等级数由 levels.yml 决定；未写 max-level 时由 manor.levels 最大键推导，再回退内置 20 级。
+        int manorMaxLevel = lv != null && lv.contains("manor.max-level")
+                ? lv.getInt("manor.max-level")
+                : LevelRules.DEFAULT_MANOR_MAX_LEVEL;
         manorMaxLevel = Math.max(manorMaxLevel, maxConfiguredLevel(manorQuotas, manorMaxLevel));
         int guildMaxLevel = lvl(lv, "guild.max-level", cfg, "guild.max-level", 5);
         guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildMemberCaps, guildMaxLevel));
         guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildCityQuotas, guildMaxLevel));
         LevelRules levels = new LevelRules(
                 guildMaxLevel,
-                lvl(lv, "guild.members-per-level", cfg, "guild.members-per-level", 5),
                 Math.max(1, manorMaxLevel),
                 manorQuotas,
                 guildMemberCaps,
@@ -265,17 +261,8 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 }
             }
         }
-        // 机器展示名（提示文案，与等级无关）：levels.yml manor.machine-names.<id>=名
-        java.util.Map<String, String> machineDisplay = new java.util.HashMap<>();
-        org.bukkit.configuration.ConfigurationSection nmSec =
-                lv == null ? null : lv.getConfigurationSection("manor.machine-names");
-        if (nmSec != null) {
-            for (String id : nmSec.getKeys(false)) {
-                machineDisplay.put(id.toLowerCase(java.util.Locale.ROOT), nmSec.getString(id, id));
-            }
-        }
         org.windy.guildshelter.domain.rule.quota.QuotaRegistry quotas =
-                new org.windy.guildshelter.domain.rule.quota.QuotaRegistry(perLevel, machineDisplay, machineIds);
+                new org.windy.guildshelter.domain.rule.quota.QuotaRegistry(perLevel, machineIds);
 
         PerformanceConfig perf = new PerformanceConfig(
                 quotas,

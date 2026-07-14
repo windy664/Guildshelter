@@ -133,17 +133,17 @@ class GuildServiceTest {
 
     @Test
     void assignManorBlockedWhenGuildFullThenUnlockedByUpgrade() {
-        service.createGuild(g, 1L); // 1 级容量 = 5
-        for (int i = 0; i < 5; i++) {
+        service.createGuild(g, 1L); // 1 级容量 = 20
+        for (int i = 0; i < 20; i++) {
             service.assignManor(g, player());
         }
-        assertEquals(5, manors.findAll(g).size());
-        // 第 6 个超出当前等级名额 → 抛 GuildFullException
+        assertEquals(20, manors.findAll(g).size());
+        // 第 21 个超出当前等级名额 → 抛 GuildFullException
         assertThrows(GuildFullException.class, () -> service.assignManor(g, player()));
-        // 公会升级 → 容量到 10，新成员可继续加入，复用下一个 slot
+        // 公会升级 → 容量到 40，新成员可继续加入，复用下一个 slot
         assertTrue(service.upgradeGuild(g));
-        Manor sixth = service.assignManor(g, player());
-        assertEquals(5, sixth.slot());
+        Manor next = service.assignManor(g, player());
+        assertEquals(20, next.slot());
     }
 
     private PlayerRef player() {

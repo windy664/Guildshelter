@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LevelRulesTest {
 
-    private final LevelRules rules = LevelRules.defaults(); // 公会5, 每级5名额, 庄园上限20
+    private final LevelRules rules = LevelRules.defaults(); // 公会5个时代, 庄园上限20
 
     @Test
-    void maxMembersScalesWithGuildLevel() {
-        assertEquals(5, rules.maxMembers(1));
-        assertEquals(10, rules.maxMembers(2));
-        assertEquals(25, rules.maxMembers(5));
+    void maxMembersComesFromLevelTable() {
+        assertEquals(20, rules.maxMembers(1));
+        assertEquals(40, rules.maxMembers(2));
+        assertEquals(100, rules.maxMembers(5));
     }
 
     @Test
@@ -36,18 +36,21 @@ class LevelRulesTest {
     }
 
     @Test
-    void customCapacityCurve() {
-        LevelRules r = new LevelRules(10, 8, 6); // 公会10级, 每级8名额, 庄园上限6
-        assertEquals(8, r.maxMembers(1));
-        assertEquals(80, r.maxMembers(10));
-        assertEquals(6, r.manorMaxLevel());
-        assertFalse(r.canUpgradeManor(6));
+    void explicitGuildTableOverridesBuiltInDefaults() {
+        LevelRules r = new LevelRules(10, 6,
+                Map.of(),
+                Map.of(1, 12, 3, 36),
+                Map.of(),
+                Map.of());
+        assertEquals(12, r.maxMembers(1));
+        assertEquals(12, r.maxMembers(2));
+        assertEquals(36, r.maxMembers(10));
     }
 
     @Test
-    void explicitManorQuotaTableOverridesLinearCurve() {
+    void explicitManorQuotaTableDrivesQuota() {
         LayoutConfig layout = LayoutConfig.defaults();
-        LevelRules r = new LevelRules(5, 5, 20,
+        LevelRules r = new LevelRules(5, 20,
                 Map.of(1, 36, 2, 45, 5, 74, 20, 300),
                 Map.of(), Map.of(), Map.of());
 
@@ -55,5 +58,16 @@ class LevelRulesTest {
         assertEquals(45, r.manorQuotaCap(layout, 2));
         assertEquals(74, r.manorQuotaCap(layout, 6)); // 未配置等级向下继承最近配置
         assertEquals(225, r.manorQuotaCap(layout, 20)); // 配大了夹到 15x15 物理上限
+    }
+
+    @Test
+    void maxManorLevelAlwaysUnlocksWholePhysicalPlot() {
+        LayoutConfig layout = LayoutConfig.defaults();
+        LevelRules r = new LevelRules(5, 20,
+                Map.of(1, 36, 19, 120, 20, 120),
+                Map.of(), Map.of(), Map.of());
+
+        assertEquals(120, r.manorQuotaCap(layout, 19));
+        assertEquals(225, r.manorQuotaCap(layout, 20));
     }
 }

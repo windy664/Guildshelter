@@ -185,7 +185,7 @@ public final class GuildService {
 
     /**
      * 该公会当前<b>有效名额容量</b>（发多少庄园 slot）：宿主插件有公会人数上限就跟宿主，
-     * 否则退回 GuildShelter 自己的等级容量（等级 × members-per-level）。
+     * 否则退回 GuildShelter 自己的等级容量（levels.yml: guild.levels.<level>.member-cap）。
      */
     public int effectiveCapacity(GuildWorld gw) {
         return guildProvider.memberCap(gw.guild()).orElseGet(() -> levels.maxMembers(gw.guildLevel()));

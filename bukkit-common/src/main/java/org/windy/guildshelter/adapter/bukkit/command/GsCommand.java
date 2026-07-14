@@ -16,6 +16,7 @@ import org.windy.guildshelter.adapter.bukkit.MergeAwareClassifier;
 import org.windy.guildshelter.adapter.bukkit.MergeRegistry;
 import org.windy.guildshelter.adapter.bukkit.Messages;
 import org.windy.guildshelter.adapter.bukkit.Permissions;
+import org.windy.guildshelter.adapter.bukkit.BlockDisplayNames;
 import org.windy.guildshelter.adapter.bukkit.listener.ManorAccessListener;
 import org.windy.guildshelter.adapter.bukkit.world.WorldManager;
 import org.windy.guildshelter.adapter.bungee.ProxyChannel;
@@ -3780,7 +3781,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§c玩家 " + args[3] + " 在公会 " + guild.value() + " 没有庄园。");
             return;
         }
-        String disp = census.quotas().display(key.id());
+        String disp = census.quotas().hasMachine(key.id()) ? BlockDisplayNames.display(key.id()) : key.id();
         sender.sendMessage("§a✓ §f" + args[3] + " §a的庄园 §7#" + slot + " §a的 §f" + disp
                 + " §a增量已" + (add ? "增加" : "设为") + " §7→ 当前增量 §f+" + newBonus);
         org.bukkit.entity.Player online = target.getPlayer();
@@ -3966,13 +3967,13 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         }
         int capacity = service.effectiveCapacity(gw);
         LayoutCalculator layout = new LayoutCalculator(gw.layout());
-        int cityChunks = gw.layout().cityChunksAtLevel(gw.guildLevel(), levels.maxGuildLevel());
+        int cityQuota = gw.cityQuotaCap(levels);
         int hereX = Integer.MIN_VALUE, hereZ = Integer.MIN_VALUE;
         if (player.getWorld().getName().equals(gw.worldName())) {
             hereX = (player.getLocation().getBlockX() >> 4) - gw.originChunkX(); // 布局坐标
             hereZ = (player.getLocation().getBlockZ() >> 4) - gw.originChunkZ();
         }
-        for (String line : GridAsciiMap.renderColored(layout, gw, occupied, capacity, cityChunks, hereX, hereZ)) {
+        for (String line : GridAsciiMap.renderColored(layout, gw, occupied, capacity, cityQuota, hereX, hereZ)) {
             player.sendMessage(line);
         }
     }
@@ -3989,8 +3990,8 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         }
         int capacity = service.effectiveCapacity(gw); // 与发地口径一致(宿主有上限跟宿主)
         LayoutCalculator layout = new LayoutCalculator(gw.layout()); // 用该世界冻结的布局
-        int cityChunks = gw.layout().cityChunksAtLevel(gw.guildLevel(), levels.maxGuildLevel());
-        for (String line : GridAsciiMap.render(layout, gw, occupied, capacity, cityChunks)) {
+        int cityQuota = gw.cityQuotaCap(levels);
+        for (String line : GridAsciiMap.render(layout, gw, occupied, capacity, cityQuota)) {
             logger.info(line);
         }
     }

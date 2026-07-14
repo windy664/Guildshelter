@@ -17,9 +17,8 @@ manor:
   max-level: 20          # 庄园等级数；默认安排 1~20 级，满级后不能再升
   initial-chunks: 6      # 1 级解锁正方形边长 → 初始额度 6²=36（首次分配就整好这块）
   max-chunks: 15         # 单块庄园物理边长上限 15x15；20 级最多解锁 225 个 chunk
-  grow-per-level: 1      # 兼容旧配置：仅在没设 max-level 时按尺寸推算级数；新配置以 max-level 为准
 
-  # 每级庄园已解锁 chunk 额度上限（显式表优先于旧线性公式）。
+  # 每级庄园已解锁 chunk 额度上限。
   # 这些值是【额度】不是边长；玩家在 15x15 物理地块内逐步解锁可建造 chunk。
   levels:
     1: { unlock-chunks: 36 }
@@ -49,31 +48,190 @@ manor:
   #   没写进表的维度 = 不限（生物/载具则沿用玩家 /gs flag 自调）。
   #   有效上限 = 这里的等级值 + 管理员增量（/gs admin limit），再与玩家自调 cap 取紧。
   limits:
-    1: { tiles: 300, drops: 200, animal: 20, hostile: 10, mob: 30, vehicle: 6, "minecraft:hopper": 4, "minecraft:blast_furnace": 2 }
-    2: { tiles: 380, drops: 230, animal: 24, hostile: 12, mob: 36, vehicle: 7, "minecraft:hopper": 5, "minecraft:blast_furnace": 2 }
-    3: { tiles: 460, drops: 260, animal: 28, hostile: 14, mob: 42, vehicle: 8, "minecraft:hopper": 6, "minecraft:blast_furnace": 3 }
-    4: { tiles: 540, drops: 290, animal: 32, hostile: 16, mob: 48, vehicle: 9, "minecraft:hopper": 7, "minecraft:blast_furnace": 3 }
-    5: { tiles: 620, drops: 320, animal: 36, hostile: 18, mob: 54, vehicle: 10, "minecraft:hopper": 8, "minecraft:blast_furnace": 4 }
-    6: { tiles: 700, drops: 350, animal: 40, hostile: 20, mob: 60, vehicle: 11, "minecraft:hopper": 9, "minecraft:blast_furnace": 4 }
-    7: { tiles: 780, drops: 380, animal: 44, hostile: 22, mob: 66, vehicle: 12, "minecraft:hopper": 10, "minecraft:blast_furnace": 5 }
-    8: { tiles: 860, drops: 410, animal: 48, hostile: 24, mob: 72, vehicle: 13, "minecraft:hopper": 11, "minecraft:blast_furnace": 5 }
-    9: { tiles: 940, drops: 440, animal: 52, hostile: 26, mob: 78, vehicle: 14, "minecraft:hopper": 12, "minecraft:blast_furnace": 6 }
-    10: { tiles: 1020, drops: 470, animal: 56, hostile: 28, mob: 84, vehicle: 15, "minecraft:hopper": 14, "minecraft:blast_furnace": 6 }
-    11: { tiles: 1100, drops: 500, animal: 60, hostile: 30, mob: 90, vehicle: 16, "minecraft:hopper": 16, "minecraft:blast_furnace": 7 }
-    12: { tiles: 1180, drops: 530, animal: 64, hostile: 32, mob: 96, vehicle: 17, "minecraft:hopper": 18, "minecraft:blast_furnace": 7 }
-    13: { tiles: 1260, drops: 560, animal: 68, hostile: 34, mob: 102, vehicle: 18, "minecraft:hopper": 20, "minecraft:blast_furnace": 8 }
-    14: { tiles: 1340, drops: 590, animal: 72, hostile: 36, mob: 108, vehicle: 19, "minecraft:hopper": 22, "minecraft:blast_furnace": 8 }
-    15: { tiles: 1420, drops: 620, animal: 76, hostile: 38, mob: 114, vehicle: 20, "minecraft:hopper": 24, "minecraft:blast_furnace": 9 }
-    16: { tiles: 1500, drops: 660, animal: 80, hostile: 42, mob: 122, vehicle: 22, "minecraft:hopper": 27, "minecraft:blast_furnace": 10 }
-    17: { tiles: 1580, drops: 700, animal: 84, hostile: 46, mob: 130, vehicle: 24, "minecraft:hopper": 30, "minecraft:blast_furnace": 11 }
-    18: { tiles: 1660, drops: 760, animal: 90, hostile: 50, mob: 138, vehicle: 26, "minecraft:hopper": 33, "minecraft:blast_furnace": 12 }
-    19: { tiles: 1740, drops: 830, animal: 96, hostile: 55, mob: 146, vehicle: 28, "minecraft:hopper": 36, "minecraft:blast_furnace": 14 }
-    20: { tiles: 1820, drops: 900, animal: 100, hostile: 60, mob: 150, vehicle: 30, "minecraft:hopper": 40, "minecraft:blast_furnace": 16 }
-
-  # 机器展示名（仅用于提示文案；与等级无关）。键 = 机器命名空间 id。
-  machine-names:
-    "minecraft:hopper": "漏斗"
-    "minecraft:blast_furnace": "高炉"
+    1:
+      tiles: 300
+      drops: 200
+      animal: 20
+      hostile: 10
+      mob: 30
+      vehicle: 6
+      "minecraft:hopper": 4
+      "minecraft:blast_furnace": 2
+    2:
+      tiles: 380
+      drops: 230
+      animal: 24
+      hostile: 12
+      mob: 36
+      vehicle: 7
+      "minecraft:hopper": 5
+      "minecraft:blast_furnace": 2
+    3:
+      tiles: 460
+      drops: 260
+      animal: 28
+      hostile: 14
+      mob: 42
+      vehicle: 8
+      "minecraft:hopper": 6
+      "minecraft:blast_furnace": 3
+    4:
+      tiles: 540
+      drops: 290
+      animal: 32
+      hostile: 16
+      mob: 48
+      vehicle: 9
+      "minecraft:hopper": 7
+      "minecraft:blast_furnace": 3
+    5:
+      tiles: 620
+      drops: 320
+      animal: 36
+      hostile: 18
+      mob: 54
+      vehicle: 10
+      "minecraft:hopper": 8
+      "minecraft:blast_furnace": 4
+    6:
+      tiles: 700
+      drops: 350
+      animal: 40
+      hostile: 20
+      mob: 60
+      vehicle: 11
+      "minecraft:hopper": 9
+      "minecraft:blast_furnace": 4
+    7:
+      tiles: 780
+      drops: 380
+      animal: 44
+      hostile: 22
+      mob: 66
+      vehicle: 12
+      "minecraft:hopper": 10
+      "minecraft:blast_furnace": 5
+    8:
+      tiles: 860
+      drops: 410
+      animal: 48
+      hostile: 24
+      mob: 72
+      vehicle: 13
+      "minecraft:hopper": 11
+      "minecraft:blast_furnace": 5
+    9:
+      tiles: 940
+      drops: 440
+      animal: 52
+      hostile: 26
+      mob: 78
+      vehicle: 14
+      "minecraft:hopper": 12
+      "minecraft:blast_furnace": 6
+    10:
+      tiles: 1020
+      drops: 470
+      animal: 56
+      hostile: 28
+      mob: 84
+      vehicle: 15
+      "minecraft:hopper": 14
+      "minecraft:blast_furnace": 6
+      # 模组机器示例：装了对应模组后，取消注释并确认机器 id 正确。
+      # "mekanism:basic_factory": 8
+      # "mekanism:digital_miner": 1
+      # "thermal:machine_furnace": 8
+    11:
+      tiles: 1100
+      drops: 500
+      animal: 60
+      hostile: 30
+      mob: 90
+      vehicle: 16
+      "minecraft:hopper": 16
+      "minecraft:blast_furnace": 7
+    12:
+      tiles: 1180
+      drops: 530
+      animal: 64
+      hostile: 32
+      mob: 96
+      vehicle: 17
+      "minecraft:hopper": 18
+      "minecraft:blast_furnace": 7
+    13:
+      tiles: 1260
+      drops: 560
+      animal: 68
+      hostile: 34
+      mob: 102
+      vehicle: 18
+      "minecraft:hopper": 20
+      "minecraft:blast_furnace": 8
+    14:
+      tiles: 1340
+      drops: 590
+      animal: 72
+      hostile: 36
+      mob: 108
+      vehicle: 19
+      "minecraft:hopper": 22
+      "minecraft:blast_furnace": 8
+    15:
+      tiles: 1420
+      drops: 620
+      animal: 76
+      hostile: 38
+      mob: 114
+      vehicle: 20
+      "minecraft:hopper": 24
+      "minecraft:blast_furnace": 9
+    16:
+      tiles: 1500
+      drops: 660
+      animal: 80
+      hostile: 42
+      mob: 122
+      vehicle: 22
+      "minecraft:hopper": 27
+      "minecraft:blast_furnace": 10
+    17:
+      tiles: 1580
+      drops: 700
+      animal: 84
+      hostile: 46
+      mob: 130
+      vehicle: 24
+      "minecraft:hopper": 30
+      "minecraft:blast_furnace": 11
+    18:
+      tiles: 1660
+      drops: 760
+      animal: 90
+      hostile: 50
+      mob: 138
+      vehicle: 26
+      "minecraft:hopper": 33
+      "minecraft:blast_furnace": 12
+    19:
+      tiles: 1740
+      drops: 830
+      animal: 96
+      hostile: 55
+      mob: 146
+      vehicle: 28
+      "minecraft:hopper": 36
+      "minecraft:blast_furnace": 14
+    20:
+      tiles: 1820
+      drops: 900
+      animal: 100
+      hostile: 60
+      mob: 150
+      vehicle: 30
+      "minecraft:hopper": 40
+      "minecraft:blast_furnace": 16
 
   # 庄园升到「对应等级」时，由控制台执行「对应命令」（管理员 /gs admin upgrade-manor 触发）。
   # 只执行升到的那一级配的命令（不累加更低等级）。命令以控制台身份执行，故 give/cmi/lp 等任意插件命令均可挂接。
@@ -123,9 +281,8 @@ manor:
 # ───────────────────────── 公会等级（营地容量 + 主城）─────────────────────────
 guild:
   max-level: 5           # 公会最高等级；配置了 guild.levels 时，以显式时代表为准
-  members-per-level: 5   # 兼容旧配置：未配置 guild.levels.member-cap 时才使用线性容量
 
-  # 公会时代（显式表优先于 members-per-level 线性公式）。
+  # 公会时代。
   # member-cap = 当前时代人数上限；main-city-unlock-chunks = 主城已解锁 chunk 额度上限。
   levels:
     1:

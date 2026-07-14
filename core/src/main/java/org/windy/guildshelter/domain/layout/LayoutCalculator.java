@@ -158,15 +158,6 @@ public final class LayoutCalculator {
         return new ChunkRegion(0, 0, plot - 1, plot - 1);
     }
 
-    /**
-     * 给定公会等级下<b>当前实际</b>主城范围（角落锚定，从 initial 长到 max，⊆ {@link #mainCityRegion()}）。
-     * 用于按等级铺城/整地/围墙；当前与最大之间那圈是"留给未来扩城"的预留空地。
-     */
-    public ChunkRegion currentCityRegion(int guildLevel, int maxGuildLevel) {
-        int c = config.cityChunksAtLevel(guildLevel, maxGuildLevel);
-        return new ChunkRegion(0, 0, c - 1, c - 1);
-    }
-
     /** 世界出生点所在方块（主城锚定角 = cell 0 最小角所在 chunk 的中心，故出生点在角落）。 */
     public int spawnBlockX() {
         return 8;

@@ -52,18 +52,9 @@ public record GuildWorld(GuildId guild, String worldName, long seed,
     }
 
     /**
-     * 主城当前<b>解锁额度上限</b>：管理员设过({@code cityQuotaOverride>=0})用其值，否则回退按公会等级算
-     * {@link LayoutConfig#cityQuotaAtLevel}（平滑兼容）。一律封顶主城 chunk 上限 {@code mainCityMaxChunks²}。
+     * 主城当前<b>解锁额度上限</b>：管理员设过({@code cityQuotaOverride>=0})用其值，否则使用 levels.yml 公会时代表。
+     * 一律封顶主城 chunk 上限 {@code mainCityMaxChunks²}。
      */
-    public int cityQuotaCap(int maxGuildLevel) {
-        int cap = layout.mainCityMaxChunks() * layout.mainCityMaxChunks();
-        if (cityQuotaOverride >= 0) {
-            return Math.min(cityQuotaOverride, cap);
-        }
-        return Math.min(layout.cityQuotaAtLevel(guildLevel, maxGuildLevel), cap);
-    }
-
-    /** 同 {@link #cityQuotaCap(int)}，但优先使用 levels.yml 的显式公会时代表。 */
     public int cityQuotaCap(LevelRules levels) {
         int cap = layout.mainCityMaxChunks() * layout.mainCityMaxChunks();
         if (cityQuotaOverride >= 0) {
