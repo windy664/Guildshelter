@@ -1,6 +1,7 @@
 package org.windy.guildshelter.platform;
 
 import org.bukkit.plugin.java.JavaPlugin;
+import org.windy.guildshelter.adapter.bukkit.ManorEntityCensus;
 import org.windy.guildshelter.adapter.bukkit.world.WaterBiomeSampler;
 import org.windy.guildshelter.domain.port.ManorMover;
 import org.windy.guildshelter.domain.port.ModDataMoverRegistry;
@@ -43,6 +44,10 @@ public interface PlatformBindings {
 
     /** 群系水域采样器（注入 WorldManager，零生成避开混合端装饰越界崩）。纯 Bukkit 返回 {@code null}（高度图兜底）。 */
     WaterBiomeSampler biomeSampler();
+
+    /** 载体特有的实体/方块实体统计后端。纯 Bukkit 保持默认 Bukkit 扫描；混合端可注入原生后端。 */
+    default void configureEntityCensus(ManorEntityCensus census) {
+    }
 
     /**
      * 注册<b>惰性铺路</b>的区块生成钩子（Iris 世界随区块自然生成顺手铺路，不强制预生成）。返回 {@code true} =

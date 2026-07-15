@@ -308,6 +308,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         getLogger().info("惰性铺路已启用（Iris 世界随区块生成按需铺路，不预生成）。");
         // 统一配额解析器（优化量 + 机器；等级基础 + 管理员增量 + 玩家自调 cap）；注入 census 供上限拦截。
         this.entityCensus = new ManorEntityCensus(registry, config.performance().quotas(), config.cityLimits());
+        bindings.configureEntityCensus(this.entityCensus);
 
         // 合并缓存
         this.mergeRegistry = new MergeRegistry(manors);

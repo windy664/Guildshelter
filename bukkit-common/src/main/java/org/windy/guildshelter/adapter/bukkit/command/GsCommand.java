@@ -318,30 +318,38 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         router.onAction("menu.controller.security", (viewer, view) -> openControllerPage(viewer, view, "security"));
         router.onAction("menu.controller.activity", (viewer, view) -> openControllerPage(viewer, view, "activity"));
         router.onAction("menu.members", (viewer, view) -> openControllerPage(viewer, view, "members"));
+        router.onAction("menu.info", (viewer, view) -> openControllerPage(viewer, view, "info"));
+        router.onAction("menu.members.", (viewer, view) -> openControllerPage(viewer, view, "members"));
         router.onAction("upgrade.pending", (viewer, view) -> runPlayerCommand(viewer, "upgrade"));
 
+        Set<String> legacyInfoOnlyActions = Set.of(
+                "command.info",
+                "command.manors",
+                "command.template",
+                "command.desc",
+                "command.flag",
+                "command.deny",
+                "command.log",
+                "command.board",
+                "command.comment",
+                "command.rate",
+                "command.inbox");
+        legacyInfoOnlyActions.forEach(action -> router.onAction(action, (viewer, view) -> {
+            // 旧版 GUI 配置可能还带这些 action。它们需要文本输入、分页或独立页面，
+            // 现在不再代替玩家发命令刷聊天，默认界面会把它们渲染成说明卡。
+        }));
+
         Map<String, String> commands = Map.ofEntries(
-                Map.entry("command.info", "info"),
                 Map.entry("command.upgrade", "upgrade"),
-                Map.entry("command.manors", "manors"),
                 Map.entry("command.home", "home"),
                 Map.entry("command.sethome", "sethome"),
                 Map.entry("command.unlock", "unlock"),
                 Map.entry("command.clear", "clear"),
-                Map.entry("command.template", "template"),
                 Map.entry("command.move", "move"),
                 Map.entry("command.middle", "middle"),
-                Map.entry("command.desc", "desc"),
                 Map.entry("command.open.60", "open 60"),
                 Map.entry("command.close", "close"),
-                Map.entry("command.flag", "flag"),
-                Map.entry("command.deny", "deny"),
-                Map.entry("command.log", "log"),
-                Map.entry("command.flower", "flower"),
-                Map.entry("command.board", "board"),
-                Map.entry("command.comment", "comment"),
-                Map.entry("command.rate", "rate"),
-                Map.entry("command.inbox", "inbox"));
+                Map.entry("command.flower", "flower"));
         for (Map.Entry<String, String> entry : commands.entrySet()) {
             router.onAction(entry.getKey(), (viewer, view) -> runPlayerCommand(viewer, entry.getValue()));
         }

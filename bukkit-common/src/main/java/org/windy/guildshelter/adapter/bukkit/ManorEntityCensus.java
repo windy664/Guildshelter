@@ -29,12 +29,22 @@ import java.util.Map;
  * 谁的家园更值钱"等按实体数量判断的功能直接取数（{@link GuildShelterPlugin#entityCensus()}）。
  */
 public final class ManorEntityCensus {
+    public record TileCounts(int tileEntities, Map<String, Integer> machineCounts) {
+        public static final TileCounts EMPTY = new TileCounts(0, Map.of());
+    }
+
+    public interface TileCounter {
+        TileCounts countManorTiles(World world, GuildWorld gw, Manor manor, java.util.Set<String> machineIds);
+
+        TileCounts countRegionTiles(World world, ChunkRegion region);
+    }
 
     private static final long CENSUS_TTL_MS = 3000; // 3 秒缓存
 
     private final GuildWorldRegistry registry;
     private final QuotaRegistry quotas;
     private final CityLimits cityLimits;
+    private volatile TileCounter tileCounter;
     /** "guildId:slot" / "guildId:city" → (Census, timestamp) 缓存。 */
     private final java.util.Map<String, CensusEntry> censusCache = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -47,6 +57,10 @@ public final class ManorEntityCensus {
     }
 
     /** 统一配额解析器（等级基础 + 管理员增量 + 玩家自调 cap）。 */
+    public void setTileCounter(TileCounter tileCounter) {
+        this.tileCounter = tileCounter;
+    }
+
     public QuotaRegistry quotas() {
         return quotas;
     }
@@ -126,6 +140,16 @@ public final class ManorEntityCensus {
         ChunkRegion plot = new LayoutCalculator(gw.layout()).plotRegion(manor.slot());
         int animals = 0, hostiles = 0, other = 0, vehicles = 0, tileEntities = 0, droppedItems = 0;
         Map<String, Integer> machineCounts = machineIds.isEmpty() ? Map.of() : new HashMap<>();
+        TileCounter counter = tileCounter;
+        boolean bukkitTileScan = countTiles;
+        if (countTiles && counter != null) {
+            TileCounts nativeTiles = counter.countManorTiles(world, gw, manor, machineIds);
+            if (nativeTiles != null) {
+                tileEntities = nativeTiles.tileEntities();
+                machineCounts = nativeTiles.machineCounts();
+                bukkitTileScan = false;
+            }
+        }
         for (int packed : manor.unlockedChunks()) {
             int cx = plot.minChunkX() + Manor.unpackDx(packed) + gw.originChunkX();
             int cz = plot.minChunkZ() + Manor.unpackDz(packed) + gw.originChunkZ();
@@ -149,7 +173,7 @@ public final class ManorEntityCensus {
                     }
                 }
             }
-            if (countTiles) {
+            if (bukkitTileScan) {
                 for (BlockState state : chunk.getTileEntities()) {
                     tileEntities++;
                     if (!machineIds.isEmpty()) {
@@ -168,6 +192,16 @@ public final class ManorEntityCensus {
     private Census countRegion(World world, ChunkRegion region, java.util.Set<String> machineIds) {
         int animals = 0, hostiles = 0, other = 0, vehicles = 0, tileEntities = 0, droppedItems = 0;
         Map<String, Integer> machineCounts = machineIds.isEmpty() ? Map.of() : new HashMap<>();
+        TileCounter counter = tileCounter;
+        boolean bukkitTileScan = true;
+        if (counter != null) {
+            TileCounts nativeTiles = counter.countRegionTiles(world, region);
+            if (nativeTiles != null) {
+                tileEntities = nativeTiles.tileEntities();
+                machineCounts = nativeTiles.machineCounts();
+                bukkitTileScan = false;
+            }
+        }
         for (int cx = region.minChunkX(); cx <= region.maxChunkX(); cx++) {
             for (int cz = region.minChunkZ(); cz <= region.maxChunkZ(); cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
@@ -189,6 +223,9 @@ public final class ManorEntityCensus {
                     }
                 }
                 // 方块实体计数（箱子/熔炉/漏斗/告示牌等）+ 被配额机器按 id 计数
+                if (!bukkitTileScan) {
+                    continue;
+                }
                 for (BlockState state : world.getChunkAt(cx, cz).getTileEntities()) {
                     tileEntities++;
                     if (!machineIds.isEmpty()) {
@@ -267,6 +304,11 @@ public final class ManorEntityCensus {
     /** 主城掉落物上限；-1 = 不限 / 未启用。供 {@code ManorLimitTask} 清理用。 */
     public int cityDropCap() {
         return cityLimits.enabled() ? cityLimits.maxDrops() : -1;
+    }
+
+    /** 主城方块实体总数上限；-1 = 不限 / 未启用。 */
+    public int cityTileCap() {
+        return cityLimits.enabled() ? cityLimits.maxTiles() : -1;
     }
 
     /** 带 3 秒 TTL 缓存的主城实体计数（范围 = 整个主城 footprint）。 */

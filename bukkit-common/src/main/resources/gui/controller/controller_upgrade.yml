@@ -11,15 +11,25 @@ items:
       - "&7当前等级: &f{level}/{max_level}"
       - "&7当前额度: &f{unlocked}&7/&f{quota} chunk"
       - "&7下一级: &fLv{next_level} &8| &7额度 &f{next_quota}"
+      - ""
+      - "&8升级会提升庄园可建设范围。"
+      - "&8脚下区块解锁和庄园升级是两套消耗。"
     action: ""
   upgrade:
     index: 20
     material: EMERALD
     name: "&a确认升级"
     lore:
-      - "&8提交升级请求"
-      - "&7会先检查 Vault 余额与背包材料。"
-      - "&7全部满足后才会扣除并提升等级。"
+      - "&8提交庄园升级"
+      - "&7目标等级: &fLv{next_level}"
+      - "&7升级后额度: &f{next_quota} chunk"
+      - ""
+      - "&7会先完整检查两件事:"
+      - "&8▪ &7Vault 余额是否足够"
+      - "&8▪ &7背包材料是否全部满足"
+      - ""
+      - "&a全部满足后才扣钱扣物。"
+      - "&c任一条件不足不会扣除任何东西。"
       - ""
       - "&e点击升级到 Lv{next_level}"
     action: "command.upgrade"
@@ -28,8 +38,15 @@ items:
     material: GOLD_INGOT
     name: "&eVault + 物品消耗"
     lore:
-      - "&7配置: &flevels.yml &8-> &fmanor.upgrade-costs"
-      - "&7GUI 只触发命令，不直接扣除。"
+      - "&8升级消耗说明"
+      - "&7金币和材料由服主在 levels.yml 配置。"
+      - "&7路径: &fmanor.upgrade-costs.levels"
+      - ""
+      - "&7物品只从玩家背包扣除。"
+      - "&7如果背包数量不足，升级不会开始。"
+      - ""
+      - "&8GUI 只负责提交升级请求，"
+      - "&8真正校验和扣除都在命令层完成。"
     action: ""
   unlock:
     index: 24
@@ -40,17 +57,24 @@ items:
       - "&7站在相邻的未解锁区块上使用。"
       - "&7消耗庄园额度，不消耗升级材料。"
       - ""
+      - "&7适合一点点向外扩建庭院、仓库、道路入口。"
+      - "&c必须站在当前庄园相邻的未解锁区块。"
+      - ""
       - "&e点击解锁脚下区块"
     action: "command.unlock"
   back:
     index: 45
     material: ARROW
     name: "&e返回控制器"
-    lore: []
+    lore:
+      - "&7回到庄园控制器首页。"
+      - "&8不会执行任何庄园操作。"
     action: "menu.controller"
   close:
     index: 49
     material: BARRIER
     name: "&c关闭"
-    lore: []
+    lore:
+      - "&7关闭当前控制器界面。"
+      - "&8未点击确认升级时不会扣除资源。"
     action: "close"

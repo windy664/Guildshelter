@@ -30,6 +30,8 @@ public final class BukkitInventoryUi implements UiBackend {
 
     /** 玩家 → 当前打开的视图。 */
     private final Map<UUID, UiView> openMenus = new HashMap<>();
+    /** 菜单内切换会触发旧 InventoryCloseEvent；该关闭事件不能清掉刚打开的新菜单状态。 */
+    private final java.util.Set<UUID> switchingMenus = new java.util.HashSet<>();
     private final UiActionRouter router;
 
     public BukkitInventoryUi(UiActionRouter router) {
@@ -46,6 +48,9 @@ public final class BukkitInventoryUi implements UiBackend {
             if (slot >= 0 && slot < view.totalSlots()) {
                 inv.setItem(slot, toItemStack(entry.getValue()));
             }
+        }
+        if (openMenus.containsKey(viewer.id())) {
+            switchingMenus.add(viewer.id());
         }
         player.openInventory(inv);
         openMenus.put(viewer.id(), view);
@@ -72,6 +77,9 @@ public final class BukkitInventoryUi implements UiBackend {
 
     /** 关闭时清理记录。 */
     void onClose(UUID playerId) {
+        if (switchingMenus.remove(playerId)) {
+            return;
+        }
         openMenus.remove(playerId);
     }
 

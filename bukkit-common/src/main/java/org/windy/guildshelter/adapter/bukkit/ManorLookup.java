@@ -46,6 +46,11 @@ public final class ManorLookup {
         return registry.isGuildWorld(world.getName());
     }
 
+    /** 当前 Bukkit 世界对应的公会世界配置；非公会世界返回 {@code null}。 */
+    public GuildWorld guildWorld(World world) {
+        return world == null ? null : registry.get(world.getName());
+    }
+
     /**
      * 返回 (blockX,blockZ) 处的成员庄园；不在公会营地/不在庄园/未分配则 empty。合并路 chunk 归主庄园。
      *

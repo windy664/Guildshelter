@@ -12,35 +12,49 @@ items:
       - "&7庄园: &f#{slot}"
       - "&7庄主: &f{owner}"
       - "&7公会等级: &f{guild_level} &8({guild_level_name}&8)"
+      - ""
+      - "&8这里是庄园身份与常用入口。"
+      - "&8会改变位置的按钮会直接生效。"
     action: ""
   info:
     index: 20
     material: MAP
     name: "&a庄园信息"
     lore:
-      - "&8概览当前庄园"
-      - "&7展示等级、额度、成员与公会信息。"
+      - "&8资料卡"
+      - "&7等级: &fLv{level}/{max_level}"
+      - "&7已解锁区块: &f{unlocked}&7/&f{quota}"
+      - "&7下一级额度: &f{next_quota}"
       - ""
-      - "&e点击查看详情"
-    action: "command.info"
+      - "&7这里已经展示核心信息。"
+      - "&8不再点击后刷聊天文字。"
+      - ""
+      - "&e这是展示卡"
+    action: ""
   manors:
     index: 21
     material: CHEST
     name: "&a我的庄园"
     lore:
-      - "&8多庄园管理"
-      - "&7列出你在本公会拥有的全部地皮。"
-      - "&7可查看默认 Home 与各地皮坐标。"
+      - "&8多庄园状态"
+      - "&7如果你拥有多块庄园，默认 Home"
+      - "&7和切换操作会在这里扩展成列表。"
       - ""
-      - "&e点击打开列表"
-    action: "command.manors"
+      - "&7当前控制器绑定: &f#{slot}"
+      - "&7当前所在公会: &f{guild}"
+      - ""
+      - "&e这是展示卡"
+    action: ""
   home:
     index: 22
     material: ENDER_PEARL
     name: "&a回家"
     lore:
       - "&8快速返回建设点"
-      - "&7优先使用你设置的 Home；未设置时回到锚定角。"
+      - "&7优先传送到你保存的 Home。"
+      - "&7如果没有设置 Home，会回到庄园默认落点。"
+      - ""
+      - "&7适合从主城、访客区或野外回到仓库。"
       - ""
       - "&e点击传送"
     action: "command.home"
@@ -53,6 +67,8 @@ items:
       - "&7把脚下位置设为以后回家的传送点。"
       - "&7适合放在入口、工作区或仓库旁。"
       - ""
+      - "&c会覆盖旧 Home。"
+      - ""
       - "&e点击设置"
     action: "command.sethome"
   members:
@@ -62,7 +78,10 @@ items:
     lore:
       - "&8协作与访问关系"
       - "&7查看庄主、共建人、普通成员和黑名单。"
-      - "&7细分增删仍使用对应管理命令。"
+      - "&7成员页会展示当前名单，不会刷聊天。"
+      - ""
+      - "&7共建人适合给可信玩家建设权限。"
+      - "&7黑名单适合拒绝特定访客。"
       - ""
       - "&e点击查看"
     action: "menu.members"
@@ -70,11 +89,15 @@ items:
     index: 45
     material: ARROW
     name: "&e返回控制器"
-    lore: []
+    lore:
+      - "&7回到庄园控制器首页。"
+      - "&8继续选择升级、护理、安保或活动。"
     action: "menu.controller"
   close:
     index: 49
     material: BARRIER
     name: "&c关闭"
-    lore: []
+    lore:
+      - "&7关闭庄园控制器。"
+      - "&8不会改变任何庄园设置。"
     action: "close"
