@@ -189,7 +189,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         // 加载语言文件
         Messages.load(getConfig().getString("language", "zh_CN"), getDataFolder());
 
-        // 等级系统独立配置 levels.yml（首启释放默认文件，并从旧 config.yml 迁移已有等级配置）。
+        // 等级系统独立配置 levels.yml（首启释放默认文件）。
         org.bukkit.configuration.file.FileConfiguration levelsCfg = loadLevelsConfig();
         org.bukkit.configuration.file.FileConfiguration serverCfg = loadServerConfig();
         GuildShelterConfig config = GuildShelterConfig.from(getConfig(), levelsCfg, serverCfg);
@@ -206,7 +206,8 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             getLogger().info("跨服模式已启用（PluginMessage，服务器名: " + config.serverName() + "）");
         }
 
-        this.worldManager = new WorldManager(config.levels(), config.oceanReseed(), config.iris(), getLogger());
+        this.worldManager = new WorldManager(config.levels(), config.oceanReseed(), config.iris(),
+                config.worldDefaults(), getLogger());
         this.worldManager.setBiomeSampler(bindings.biomeSampler()); // 混合端注入群系采样，纯 Bukkit 为 null
         this.worldManager.setPlugin(this); // 异步建 Iris 世界用其调度器
         // 落点落脚台：home/spawn 等落点地表是水/岩浆时铺一格(默认玻璃)防落水；none/空=关闭。
@@ -264,6 +265,10 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
                                                   int cx, int cz, java.util.UUID player) {
                 fireGuildEvent(new org.windy.guildshelter.api.event.ChunkUnlockedEvent(toRef(g), slot, cx, cz, player));
             }
+            @Override public void onCityChunkUnlocked(org.windy.guildshelter.domain.model.GuildId g,
+                                                      int cx, int cz) {
+                fireGuildEvent(new org.windy.guildshelter.api.event.CityChunkUnlockedEvent(toRef(g), cx, cz));
+            }
             @Override public void onManorUpgraded(org.windy.guildshelter.domain.model.GuildId g, int slot,
                                                   int oldLevel, int newLevel, java.util.UUID owner) {
                 fireGuildEvent(new org.windy.guildshelter.api.event.ManorUpgradedEvent(toRef(g), slot, oldLevel, newLevel, owner));
@@ -273,11 +278,11 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             }
         });
 
-        // 庄园升级回调：升到对应等级时由控制台执行对应命令（levels.yml: manor.upgrade-commands）。
+        // 庄园升级回调：升到对应等级时由控制台执行对应命令（levels.yml: manor.levels.<等级>.upgrade.commands）。
         ManorUpgradeCommandHook upgradeHook = ManorUpgradeCommandHook.fromConfig(this, levelsCfg);
         if (upgradeHook != null) {
             service.setUpgradeHook(upgradeHook);
-            getLogger().info("庄园升级命令回调已启用（levels.yml: manor.upgrade-commands）。");
+            getLogger().info("庄园升级命令回调已启用（levels.yml: manor.levels.<等级>.upgrade.commands）。");
         }
 
         // 搬家系统
@@ -361,7 +366,8 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         // 对外只读 API（PLAN_API.md 第一期）：注册到 Bukkit ServicesManager，供附属插件（如农场加速）消费。
         // 走与 ClaimGuard 同一套热路径缓存，零额外查询；只回 DTO，不暴露内部模型。
         org.windy.guildshelter.api.GuildShelterAPI api = new org.windy.guildshelter.adapter.bukkit.api.GuildShelterApiImpl(
-                registry, this.worldCache, cityFlagCache, memberCache, guilds, manors, service, buildCheckRegistry);
+                registry, this.worldCache, cityFlagCache, memberCache, guilds, manors, service, worldManager,
+                buildCheckRegistry);
         getServer().getServicesManager().register(org.windy.guildshelter.api.GuildShelterAPI.class,
                 api, this, org.bukkit.plugin.ServicePriority.Normal);
         getLogger().info("[GuildShelter] 对外 API 已注册（ServicesManager: GuildShelterAPI）。");
@@ -652,13 +658,16 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         XaeroIntegration xaero = new XaeroIntegration(registry, guilds, manors, this, getLogger());
         getServer().getPluginManager().registerEvents(xaero, this);
 
-        // Xaero 世界地图圈地（服务端半，PLAN_XAERO.md Phase 1）：注册 guildshelter:map 通道，进世界下发地皮、
-        // 收客户端 mod 的圈地点击并裁决。无客户端 mod 时静默（出站无监听端即丢、入站永不发生）。
-        org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel mapChannel =
-                new org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel(
-                        registry, guilds, manors, service, this, getLogger());
-        mapChannel.register();
-        command.setMapChannel(mapChannel); // 命令解锁后刷新地图高亮
+        // Legacy built-in map bridge. Disabled by default because Xaero map
+        // integration is moving to the optional GuildShelterXaeroMap addon.
+        if (getConfig().getBoolean("map.builtin-xaero-bridge", false)) {
+            org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel mapChannel =
+                    new org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel(
+                            registry, guilds, manors, service, this, getLogger());
+            mapChannel.register();
+            command.setMapChannel(mapChannel);
+            getLogger().warning("[GuildShelter] map.builtin-xaero-bridge is deprecated; install GuildShelterXaeroMap instead.");
+        }
 
         // ===== 启动横幅（彩色 logo + 信息汇总，载体一眼可辨）=====
         String protectionDesc = bindings.isHybrid() ? "原生 NeoForge 事件" : "Bukkit 监听器";
@@ -683,40 +692,13 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
                 statsDesc));
     }
 
-    /**
-     * 加载等级系统配置 levels.yml：首启时释放默认文件，并把旧 config.yml 里的等级配置（如有）迁移过来，
-     * 避免老服升级后等级被悄悄重置。返回可读的 FileConfiguration。
-     */
+    /** 加载等级系统配置 levels.yml；首启时释放默认文件。 */
     private org.bukkit.configuration.file.FileConfiguration loadLevelsConfig() {
         java.io.File file = new java.io.File(getDataFolder(), "levels.yml");
-        boolean firstRun = !file.exists();
-        if (firstRun) {
+        if (!file.exists()) {
             saveResource("levels.yml", false);
         }
-        org.bukkit.configuration.file.FileConfiguration lv =
-                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
-        if (firstRun) {
-            org.bukkit.configuration.file.FileConfiguration old = getConfig();
-            boolean migrated = false;
-            // 旧 member-plot.* → manor.*
-            migrated |= copyInt(old, "member-plot.initial-chunks", lv, "manor.initial-chunks");
-            migrated |= copyInt(old, "member-plot.max-chunks", lv, "manor.max-chunks");
-            // 旧 guild.* → guild.*（键名不变）
-            migrated |= copyInt(old, "guild.max-level", lv, "guild.max-level");
-            // 旧 main-city.* → guild.main-city.*
-            migrated |= copyInt(old, "main-city.initial-chunks", lv, "guild.main-city.initial-chunks");
-            migrated |= copyInt(old, "main-city.max-chunks", lv, "guild.main-city.max-chunks");
-            migrated |= copySection(old, "manor-upgrade-commands", lv, "manor.upgrade-commands");
-            if (migrated) {
-                try {
-                    lv.save(file);
-                    getLogger().info("已把旧 config.yml 的等级配置迁移到 levels.yml。");
-                } catch (java.io.IOException e) {
-                    getLogger().warning("迁移 levels.yml 失败: " + e.getMessage());
-                }
-            }
-        }
-        return lv;
+        return org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(file);
     }
 
     /**
@@ -750,27 +732,6 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
             name = worldContainer != null ? worldContainer.getName() : "";
         }
         return (name == null || name.isBlank()) ? "server" : name;
-    }
-
-    /** 若源有该键则复制到目标。返回是否复制了。 */
-    private static boolean copyInt(org.bukkit.configuration.file.FileConfiguration src, String srcKey,
-                                   org.bukkit.configuration.file.FileConfiguration dst, String dstKey) {
-        if (src.contains(srcKey)) {
-            dst.set(dstKey, src.getInt(srcKey));
-            return true;
-        }
-        return false;
-    }
-
-    /** 若源有该配置段则复制到目标。返回是否复制了。 */
-    private static boolean copySection(org.bukkit.configuration.file.FileConfiguration src, String srcKey,
-                                       org.bukkit.configuration.file.FileConfiguration dst, String dstKey) {
-        org.bukkit.configuration.ConfigurationSection section = src.getConfigurationSection(srcKey);
-        if (section == null) {
-            return false;
-        }
-        dst.set(dstKey, section);
-        return true;
     }
 
     /** GuildId → 对外 {@link org.windy.guildshelter.api.GuildRef}；worldName 用确定式 worldName(g)（解散后仍可得）。 */

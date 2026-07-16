@@ -43,7 +43,7 @@ items:
       - "&8▪ &7活动建筑统一发放"
       - ""
       - "&8当前 GUI 暂不承载模板命名输入。"
-    action: ""
+    action: "menu.controller.maintenance"
   move:
     index: 22
     material: MINECART
@@ -57,7 +57,7 @@ items:
       - "&7但仍建议在低峰期操作。"
       - ""
       - "&e点击进入搬家流程"
-    action: "command.move"
+    action: "menu.controller.maintenance"
   middle:
     index: 23
     material: TARGET
@@ -85,6 +85,17 @@ items:
       - ""
       - "&8当前 GUI 暂不承载文本输入。"
     action: ""
+  maintenance:
+    index: 31
+    material: CRAFTING_TABLE
+    name: "&e维护与迁移"
+    lore:
+      - "&8模板、子领地、搬家、交换、合并。"
+      - "&7集中查看需要参数或文本输入的维护命令。"
+      - "&7不会点击后刷空命令用法。"
+      - ""
+      - "&e点击打开维护与迁移页"
+    action: "menu.controller.maintenance"
   back:
     index: 45
     material: ARROW

@@ -1,0 +1,144 @@
+# GuildShelterHorde 默认配置
+# 说明：
+# - 尸潮是“单营地、单会话、全局互斥”。
+# - 周常只会按槽位依次挑 1 个营地，不会同时开多个营地。
+# - `max-alive-mobs` 比 `max-waves` 更影响卡顿，优先控它。
+# - `spawn-radius` 只控制中心兜底刷点，优先路点刷怪时影响不大。
+# - 默认会在尸潮期间临时把营地世界切到困难，结束后恢复原难度。
+max-waves: 6
+# 每波基础怪数。注意这是一整波总量，不是一次性刷出的数量。
+base-mobs-per-wave: 16
+# 公会等级每提升 1 级，额外增加多少只怪。
+mobs-per-guild-level: 2
+# 每波之间的成长值。
+wave-growth: 2
+# 单波推进时长（秒）。到点后进入下一波整备，不会清理上一波残留怪。
+wave-duration-seconds: 90
+# 两次刷怪之间的间隔（秒）。
+spawn-interval-seconds: 3
+# 每次刷怪脉冲最多刷多少只。之前每次只刷 1 只，所以开局看起来不像尸潮。
+spawn-batch-size: 4
+# 公会等级每提升 1 级，每次刷怪脉冲额外增加多少只。
+# 默认 0，避免高等级营地把瞬时刷怪量抬得太夸张。
+spawn-batch-per-guild-level: 0
+# 同时场上最多存活多少只尸潮怪。
+max-alive-mobs: 40
+# 波与波之间的整备时间（秒）。
+intermission-seconds: 12
+# 营地无人驻守多久后退潮（秒）。
+retreat-timeout-seconds: 45
+# 中心兜底刷点半径。
+spawn-radius: 18
+
+spawn:
+  # 有可用道路刷点时，是否优先选择靠近当前在线玩家的路边。
+  # 开启后不会固定刷在玩家脚边，而是从最近的一批道路候选点里随机挑一个。
+  prefer-near-players: true
+  # “最近的一批”包含多少个道路候选点。值越小越贴近玩家，值越大越分散。
+  near-player-candidate-count: 8
+
+# 通关后基础经验奖励。
+reward-exp: 80
+# 每个公会等级额外奖励经验。
+reward-exp-per-guild-level: 20
+
+mob-health:
+  # 基础血量倍率。1.0 = 原版血量；1.8 = 原版 1.8 倍。
+  multiplier: 1.8
+  # 公会等级每提升 1 级，额外增加的血量倍率。
+  per-guild-level: 0.08
+  # 每深入 1 波，额外增加的血量倍率。
+  per-wave: 0.08
+
+difficulty:
+  # 是否在尸潮期间由附属临时接管世界难度。
+  # 开启后，即使营地世界原本是和平，也会先切到 forced-difficulty 再刷怪。
+  force-during-horde: true
+  # 尸潮期间使用的难度。建议 HARD；如果写 PEACEFUL 或非法值，会自动按 HARD 处理。
+  forced-difficulty: HARD
+  # 尸潮结束后是否恢复启动前的世界难度。
+  # 如果管理员在尸潮期间手动改过难度，附属不会强行覆盖管理员的新设置。
+  restore-after-horde: true
+
+reminder:
+  # 玩家进入营地世界或上线时，是否提示本营地距离下一次尸潮还有多久。
+  enabled: true
+  # 进世界后延迟多少 tick 再提醒。20 tick = 1 秒，避免刚传送时位置还没稳定。
+  join-delay-ticks: 20
+
+combat:
+  # 是否让尸潮怪绕过 GuildShelter 的 pve / pve-monster / pve-player 标记。
+  bypass-pve-flags: true
+  # 是否连 invincible 也覆盖掉。默认关，避免破坏现有保护逻辑。
+  bypass-invincible-flag: false
+# 尸潮怪物池。只会从这里随机取怪。
+mob-types:
+  - ZOMBIE
+  - HUSK
+  - SKELETON
+  - SPIDER
+  - DROWNED
+
+weekly:
+  # 是否启用周常尸潮排期。
+  enabled: false
+  # 周常时间使用的时区。
+  timezone: Asia/Shanghai
+  # 调度器多久检查一次排期窗口，单位秒。
+  check-interval-seconds: 60
+  slots:
+    # day 可写 MONDAY..SUNDAY，或 1..7（1=MONDAY）。
+    # 每个槽位只会排 1 个营地；如果当前已有尸潮，就先排队等下一次 tick。
+    - label: saturday-prime
+      day: SATURDAY
+      time: "20:00"
+    - label: sunday-prime
+      day: SUNDAY
+      time: "20:00"
+
+messages:
+  command:
+    no-permission: "&c你没有权限使用尸潮管理命令。"
+    usage: "&e用法：/gshorde <start|stop|status> [worldName]"
+    console-start-usage: "&e控制台用法：/gshorde start <worldName>"
+    console-stop-usage: "&e控制台用法：/gshorde stop <worldName>"
+    console-status-usage: "&e控制台用法：/gshorde status <worldName>"
+    started: "&a已为营地 &f{guild} &a启动尸潮。"
+    stopped: "&a已停止世界 &f{world} &a的尸潮。"
+    not-running: "&e世界 &f{world} &e当前没有尸潮。"
+  error:
+    not-in-camp: "&c你当前不在 GuildShelter 公会营地内。"
+    world-not-loaded: "&c营地世界未加载：&f{world}"
+    world-not-camp: "&c该世界不是 GuildShelter 公会营地：&f{world}"
+    already-running-camp: "&c营地 &f{guild} &c的尸潮已经在进行中。"
+    already-running-global: "&c当前已有其它营地尸潮在进行中，同一时间只能开一个营地。"
+    peaceful-disabled: "&c无法启动尸潮：营地世界是和平难度，且配置未允许临时改难度。"
+  session:
+    started: "&6尸潮来袭！&e守住公会营地。"
+    wave-start: "&c第 &f{wave}&c/&f{max_waves} &c波尸潮开始。"
+    wave-end: "&e第 &f{wave} &e波攻势结束，残留敌人不会被清理。"
+    world-unloaded: "&e尸潮已结束：营地世界已卸载。"
+    world-peaceful: "&e尸潮已结束：营地世界被切回和平难度。"
+    no-spawn: "&e尸潮已结束：当前世界拒绝生成敌对生物。"
+    no-defenders: "&e尸潮已退去：营地无人驻守。"
+    success: "&a尸潮防守成功。"
+    failed: "&c尸潮防守失败。"
+    manual-stop: "&e管理员已停止尸潮。"
+    plugin-disabled: "&e插件卸载，尸潮已停止。"
+    camp-dissolved: "&e营地已解散，尸潮已停止。"
+    reward: "&a尸潮奖励：&f{exp} &a经验。"
+    difficulty-forced: "&e尸潮期间已临时将营地世界难度调整为 &c{difficulty}&e。"
+    difficulty-restored: "&7尸潮结束，营地世界难度已恢复为 &f{difficulty}&7。"
+  status:
+    running: "&e尸潮进行中：第 &f{wave}&e/&f{max_waves} &e波，已生成 &f{spawned}&e/&f{target} &e只，存活 &f{alive} &e只。"
+    intermission: "&e尸潮整备中：第 &f{wave}&e/&f{max_waves} &e波，剩余 &f{seconds}s&e。"
+  boss:
+    preparing: "尸潮整备中"
+    intermission: "尸潮整备 | 第 {wave} 波攻势结束"
+    wave: "尸潮第 {wave}/{max_waves} 波 | 已生成 {spawned}/{target} | 存活 {alive}"
+  reminder:
+    running: "&6尸潮提醒：&c本营地尸潮正在进行中。"
+    queued: "&6尸潮提醒：&e本营地尸潮已排队，等待当前尸潮结束后触发。"
+    scheduled: "&6尸潮提醒：&e本营地约 &f{remaining} &e后迎来尸潮。"
+    less-than-day: "不到1天"
+    days: "{days}天"

@@ -1,0 +1,143 @@
+title: "&0庄园控制器 - 快捷操作"
+size: 36
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: COMPASS
+    name: "&e快捷操作"
+    lore:
+      - "&7庄园: &f#{slot} &8| &7公会: &f{guild}"
+      - "&7等级: &fLv{level}/{max_level}"
+      - ""
+      - "&8这里仅放不需要文字输入的现有功能。"
+      - "&8需要玩家名、留言、标题、描述的操作继续用聊天命令。"
+    action: ""
+
+  home:
+    index: 10
+    material: ENDER_PEARL
+    name: "&a回家"
+    lore:
+      - "&8传送到你的庄园 Home。"
+      - "&7未设置 Home 时会回到默认庄园落点。"
+      - ""
+      - "&e点击执行 /gs home"
+    action: "command.home"
+
+  sethome:
+    index: 11
+    material: COMPASS
+    name: "&a设置 Home"
+    lore:
+      - "&8保存当前脚下位置。"
+      - "&7适合放在主楼、仓库或入口旁。"
+      - ""
+      - "&c会覆盖旧 Home。"
+      - "&e点击执行 /gs sethome"
+    action: "command.sethome"
+
+  spawn:
+    index: 12
+    material: LODESTONE
+    name: "&a营地出生点"
+    lore:
+      - "&8回到公会营地出生点。"
+      - "&7用于从庄园返回主城或集合点。"
+      - ""
+      - "&e点击执行 /gs spawn"
+    action: "command.spawn"
+
+  middle:
+    index: 13
+    material: TARGET
+    name: "&a庄园中心"
+    lore:
+      - "&8传送到当前庄园中心。"
+      - "&7用于定位边界、对齐建筑或检查布局。"
+      - ""
+      - "&e点击执行 /gs middle"
+    action: "command.middle"
+
+  unlock:
+    index: 14
+    material: DIAMOND_PICKAXE
+    name: "&a解锁脚下区块"
+    lore:
+      - "&8扩展可建设范围。"
+      - "&7必须站在当前庄园相邻的未解锁区块。"
+      - ""
+      - "&e点击执行 /gs unlock"
+    action: "command.unlock"
+
+  open:
+    index: 19
+    material: OAK_DOOR
+    name: "&a开放访客 60 分钟"
+    lore:
+      - "&8临时允许访客进入。"
+      - "&7适合展示、评分或活动参观。"
+      - ""
+      - "&e点击执行 /gs open 60"
+    action: "command.open.60"
+
+  close_visitors:
+    index: 20
+    material: IRON_DOOR
+    name: "&c关闭访客"
+    lore:
+      - "&8取消临时开放状态。"
+      - "&7成员和共建人仍按权限进入。"
+      - ""
+      - "&e点击执行 /gs close"
+    action: "command.close"
+
+  clear:
+    index: 21
+    material: IRON_SHOVEL
+    name: "&e清理地表"
+    lore:
+      - "&8清理当前庄园地表。"
+      - "&7属于会改变世界的操作，命令侧会要求确认。"
+      - ""
+      - "&e点击执行 /gs clear"
+    action: "command.clear"
+
+  move:
+    index: 22
+    material: MINECART
+    name: "&e搬家"
+    lore:
+      - "&8迁移庄园到另一个公会。"
+      - "&7需要目标公会名，继续使用聊天命令输入。"
+      - ""
+      - "&8用法: &f/gs move <公会名>"
+    action: ""
+
+  text_hint:
+    index: 24
+    material: WRITABLE_BOOK
+    name: "&f文本类功能"
+    lore:
+      - "&7描述、公告、留言、问候语、告别语。"
+      - "&8这些需要输入内容，继续使用聊天命令。"
+      - ""
+      - "&8后续如果接聊天输入向导，再做成独立 GUI。"
+    action: ""
+
+  back:
+    index: 27
+    material: ARROW
+    name: "&e返回控制器"
+    lore:
+      - "&7回到庄园控制器首页。"
+    action: "menu.controller"
+
+  close:
+    index: 31
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭当前快捷操作页。"
+    action: "close"

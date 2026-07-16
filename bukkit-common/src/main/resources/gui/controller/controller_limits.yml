@@ -1,0 +1,155 @@
+title: "&0庄园控制器 - 限额监控"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: COMPARATOR
+    name: "&b限额监控"
+    lore:
+      - "&7庄园: &f#{slot} &8| &7Lv&f{level}/{max_level}"
+      - "&7已解锁: &f{unlocked}&7/&f{quota} chunk"
+      - "&7统计状态: &f{limits_world_status}"
+      - ""
+      - "&8这里显示等级配置、管理员增量和玩家自调 cap 后的有效上限。"
+      - "&8如果世界未加载，当前值会显示为 0。"
+    action: ""
+
+  tiles:
+    index: 19
+    material: HOPPER
+    name: "&e方块实体"
+    lore:
+      - "&8箱子、漏斗、熔炉、机器等 BlockEntity 总量"
+      - "&7当前: &f{tiles_used}"
+      - "&7上限: &f{tiles_cap}"
+      - "&7剩余: &f{tiles_remain}"
+      - "&7状态: &f{tiles_status}"
+      - ""
+      - "&8路径: &fmanor.levels.<等级>.limits.tiles"
+    action: ""
+
+  drops:
+    index: 20
+    material: BONE
+    name: "&e掉落物"
+    lore:
+      - "&8庄园已解锁区块内的 Item 实体"
+      - "&7当前: &f{drops_used}"
+      - "&7上限: &f{drops_cap}"
+      - "&7剩余: &f{drops_remain}"
+      - "&7状态: &f{drops_status}"
+      - ""
+      - "&8路径: &fmanor.levels.<等级>.limits.drops"
+    action: ""
+
+  animals:
+    index: 21
+    material: WHEAT
+    name: "&a动物"
+    lore:
+      - "&8牛、羊、猪、鸡等友好动物"
+      - "&7当前: &f{animal_used}"
+      - "&7上限: &f{animal_cap}"
+      - "&7剩余: &f{animal_remain}"
+      - "&7状态: &f{animal_status}"
+    action: ""
+
+  hostiles:
+    index: 22
+    material: ZOMBIE_HEAD
+    name: "&c敌对生物"
+    lore:
+      - "&8怪物类实体"
+      - "&7当前: &f{hostile_used}"
+      - "&7上限: &f{hostile_cap}"
+      - "&7剩余: &f{hostile_remain}"
+      - "&7状态: &f{hostile_status}"
+    action: ""
+
+  mobs:
+    index: 23
+    material: EGG
+    name: "&d生物总数"
+    lore:
+      - "&8动物 + 敌对生物 + 其它生物"
+      - "&7当前: &f{mob_used}"
+      - "&7上限: &f{mob_cap}"
+      - "&7剩余: &f{mob_remain}"
+      - "&7状态: &f{mob_status}"
+    action: ""
+
+  vehicles:
+    index: 24
+    material: MINECART
+    name: "&6载具"
+    lore:
+      - "&8矿车、船等载具实体"
+      - "&7当前: &f{vehicle_used}"
+      - "&7上限: &f{vehicle_cap}"
+      - "&7剩余: &f{vehicle_remain}"
+      - "&7状态: &f{vehicle_status}"
+    action: ""
+
+  machine_summary:
+    index: 31
+    material: FURNACE
+    name: "&b机器配额"
+    lore:
+      - "&8按具体方块 id 单独限制的机器"
+      - "&7已配置: &f{machine_count} &7项"
+      - "&7摘要: &f{machine_summary}"
+      - ""
+      - "&8机器配额来自 limits 里的非固定维度键。"
+      - "&8例如 &fminecraft:hopper&8。"
+    action: ""
+
+  machine_1:
+    index: 37
+    material: HOPPER
+    name: "&f{machine_1_name}"
+    lore:
+      - "&7当前: &f{machine_1_used}"
+      - "&7上限: &f{machine_1_cap}"
+      - "&7剩余: &f{machine_1_remain}"
+      - "&7状态: &f{machine_1_status}"
+    action: ""
+
+  machine_2:
+    index: 38
+    material: BLAST_FURNACE
+    name: "&f{machine_2_name}"
+    lore:
+      - "&7当前: &f{machine_2_used}"
+      - "&7上限: &f{machine_2_cap}"
+      - "&7剩余: &f{machine_2_remain}"
+      - "&7状态: &f{machine_2_status}"
+    action: ""
+
+  machine_3:
+    index: 39
+    material: REDSTONE
+    name: "&f{machine_3_name}"
+    lore:
+      - "&7当前: &f{machine_3_used}"
+      - "&7上限: &f{machine_3_cap}"
+      - "&7剩余: &f{machine_3_remain}"
+      - "&7状态: &f{machine_3_status}"
+    action: ""
+
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore:
+      - "&7回到庄园控制器首页。"
+    action: "menu.controller"
+
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭当前控制器界面。"
+    action: "close"

@@ -1,0 +1,146 @@
+title: "&0庄园控制器 - 安保开关"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: REDSTONE_TORCH
+    name: "&e安保开关"
+    lore:
+      - "&7当前自定义 Flag: &f{flag_custom_count} 项"
+      - ""
+      - "&8点击按钮会立即切换并保存。"
+      - "&8这里仅放安保高频布尔开关。"
+    action: ""
+  deny_entry:
+    index: 20
+    material: OAK_DOOR
+    name: "&e谢客进入"
+    lore:
+      - "&7当前: &f{deny_entry_status}"
+      - "&7效果: &f开启后非成员不能进入庄园"
+      - "&e{deny_entry_next}"
+    action: "flag.toggle.deny-entry"
+  deny_exit:
+    index: 21
+    material: IRON_DOOR
+    name: "&e限制离开"
+    lore:
+      - "&7当前: &f{deny_exit_status}"
+      - "&7效果: &f开启后非成员不能离开庄园"
+      - "&e{deny_exit_next}"
+    action: "flag.toggle.deny-exit"
+  pvp:
+    index: 22
+    material: DIAMOND_SWORD
+    name: "&cPVP"
+    lore:
+      - "&7当前: &f{pvp_status}"
+      - "&7效果: &f控制玩家之间是否可互相伤害"
+      - "&e{pvp_next}"
+    action: "flag.toggle.pvp"
+  use:
+    index: 29
+    material: LEVER
+    name: "&a普通交互"
+    lore:
+      - "&7当前: &f{use_status}"
+      - "&7效果: &f访客能否使用门、按钮、拉杆等"
+      - "&e{use_next}"
+    action: "flag.toggle.use"
+  container:
+    index: 30
+    material: CHEST
+    name: "&a容器访问"
+    lore:
+      - "&7当前: &f{container_status}"
+      - "&7效果: &f访客能否打开箱子、熔炉、漏斗等"
+      - "&e{container_next}"
+    action: "flag.toggle.container"
+  pve:
+    index: 23
+    material: IRON_SWORD
+    name: "&cPVE"
+    lore:
+      - "&7当前: &f{pve_status}"
+      - "&7效果: &f控制玩家与怪物是否可互相伤害"
+      - "&e{pve_next}"
+    action: "flag.toggle.pve"
+  invincible:
+    index: 24
+    material: TOTEM_OF_UNDYING
+    name: "&d无敌"
+    lore:
+      - "&7当前: &f{invincible_status}"
+      - "&7效果: &f开启后玩家在庄园内免疫伤害"
+      - "&e{invincible_next}"
+    action: "flag.toggle.invincible"
+  item_frame:
+    index: 31
+    material: ITEM_FRAME
+    name: "&a展示框/盔甲架"
+    lore:
+      - "&7当前: &f{item_frame_status}"
+      - "&7效果: &f访客能否操作展示框和盔甲架"
+      - "&e{item_frame_next}"
+    action: "flag.toggle.item-frame"
+  vehicle:
+    index: 32
+    material: MINECART
+    name: "&a载具交互"
+    lore:
+      - "&7当前: &f{vehicle_status}"
+      - "&7效果: &f访客能否使用船和矿车"
+      - "&e{vehicle_next}"
+    action: "flag.toggle.vehicle-use"
+  titles:
+    index: 33
+    material: NAME_TAG
+    name: "&b标题提示"
+    lore:
+      - "&7当前: &f{titles_status}"
+      - "&7效果: &f进出消息显示为屏幕标题"
+      - "&e{titles_next}"
+    action: "flag.toggle.titles"
+  notify_enter:
+    index: 38
+    material: BELL
+    name: "&b进入通知"
+    lore:
+      - "&7当前: &f{notify_enter_status}"
+      - "&7效果: &f有人进入时通知在线庄园成员"
+      - "&e{notify_enter_next}"
+    action: "flag.toggle.notify-enter"
+  notify_leave:
+    index: 39
+    material: BELL
+    name: "&b离开通知"
+    lore:
+      - "&7当前: &f{notify_leave_status}"
+      - "&7效果: &f有人离开时通知在线庄园成员"
+      - "&e{notify_leave_next}"
+    action: "flag.toggle.notify-leave"
+  full_flags:
+    index: 41
+    material: BOOK
+    name: "&e完整 Flag 列表"
+    lore:
+      - "&7{more_flags_text}"
+      - "&8包含环境、农场、实体数值等更多 Flag。"
+      - "&e点击打开完整编辑器"
+    action: "menu.controller.flags.full"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回安保页"
+    lore:
+      - "&7回到金库与安保状态页。"
+    action: "menu.controller.security"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭庄园控制器。"
+    action: "close"

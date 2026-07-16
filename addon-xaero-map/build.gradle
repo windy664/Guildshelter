@@ -1,0 +1,18 @@
+// Optional Bukkit-side bridge for Xaero World Map integration.
+// Keep this module compileOnly against GuildShelter's public API. It must not
+// reach into bukkit-common internals once the map bridge is moved out.
+base {
+    archivesName = 'guildshelter-xaero-map'
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT'
+    compileOnly project(':guildshelter-api')
+}
+
+processResources {
+    def ver = project.version.toString()
+    filesMatching('plugin.yml') {
+        expand(version: ver)
+    }
+}

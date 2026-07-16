@@ -6,50 +6,101 @@ items:
   header:
     index: 4
     material: EXPERIENCE_BOTTLE
-    name: "&a升级"
+    name: "&a升级预览"
     lore:
       - "&7当前等级: &f{level}/{max_level}"
       - "&7当前额度: &f{unlocked}&7/&f{quota} chunk"
-      - "&7下一级: &fLv{next_level} &8| &7额度 &f{next_quota}"
+      - "&7目标等级: &fLv{next_level} &8| &7状态: &f{upgrade_status}"
+      - "&7升级后额度: &f{next_quota} chunk &8({quota_delta})"
       - ""
-      - "&8升级会提升庄园可建设范围。"
-      - "&8脚下区块解锁和庄园升级是两套消耗。"
+      - "&8升级会提高庄园等级，并同步刷新可用配额。"
+      - "&8脚下区块解锁仍然单独消耗庄园额度。"
     action: ""
   upgrade:
     index: 20
     material: EMERALD
     name: "&a确认升级"
     lore:
-      - "&8提交庄园升级"
+      - "&8提交庄园升级请求"
       - "&7目标等级: &fLv{next_level}"
-      - "&7升级后额度: &f{next_quota} chunk"
+      - "&7金币消耗: &e{upgrade_money}"
+      - "&7材料项数: &f{upgrade_items_count}"
       - ""
-      - "&7会先完整检查两件事:"
-      - "&8▪ &7Vault 余额是否足够"
-      - "&8▪ &7背包材料是否全部满足"
+      - "&8▪ &7先检查 Vault 余额"
+      - "&8▪ &7再检查背包材料"
+      - "&8▪ &7全部满足后才扣钱扣物"
       - ""
-      - "&a全部满足后才扣钱扣物。"
-      - "&c任一条件不足不会扣除任何东西。"
-      - ""
+      - "&c任一条件不足不会扣除资源。"
       - "&e点击升级到 Lv{next_level}"
     action: "command.upgrade"
   cost:
     index: 22
     material: GOLD_INGOT
-    name: "&eVault + 物品消耗"
+    name: "&e升级消耗"
     lore:
-      - "&8升级消耗说明"
-      - "&7金币和材料由服主在 levels.yml 配置。"
-      - "&7路径: &fmanor.upgrade-costs.levels"
+      - "&7金币: &e{upgrade_money}"
+      - "&7材料: &f{upgrade_items_count} 项"
       - ""
-      - "&7物品只从玩家背包扣除。"
-      - "&7如果背包数量不足，升级不会开始。"
+      - "&8▪ &7{upgrade_item_1}"
+      - "&8▪ &7{upgrade_item_2}"
+      - "&8▪ &7{upgrade_item_3}"
+      - "&8▪ &7{upgrade_item_4}"
+      - "&8▪ &7{upgrade_item_5}"
+      - "&8更多: &f{upgrade_items_more}"
       - ""
-      - "&8GUI 只负责提交升级请求，"
-      - "&8真正校验和扣除都在命令层完成。"
+      - "&8配置路径: manor.levels.<等级>.upgrade"
+    action: ""
+  quota:
+    index: 24
+    material: MAP
+    name: "&b区块额度变化"
+    lore:
+      - "&7当前额度: &f{quota} chunk"
+      - "&7升级后额度: &f{next_quota} chunk"
+      - "&7变化: &a{quota_delta}"
+      - ""
+      - "&8额度决定庄园可解锁的 chunk 数。"
+      - "&8升级不会自动解锁新区块。"
+    action: ""
+  limit_tiles:
+    index: 29
+    material: HOPPER
+    name: "&e方块实体上限"
+    lore:
+      - "&7升级后: &f{tiles_next_cap}"
+      - "&7变化: &a{tiles_delta}"
+      - "&8包含箱子、漏斗、熔炉等方块实体。"
+    action: ""
+  limit_drops:
+    index: 30
+    material: BONE
+    name: "&e掉落物上限"
+    lore:
+      - "&7升级后: &f{drops_next_cap}"
+      - "&7变化: &a{drops_delta}"
+      - "&8用于控制庄园内散落物品数量。"
+    action: ""
+  limit_mobs:
+    index: 31
+    material: ZOMBIE_HEAD
+    name: "&e生物上限"
+    lore:
+      - "&7总生物: &f{mob_next_cap} &8({mob_delta})"
+      - "&7动物: &f{animal_next_cap} &8({animal_delta})"
+      - "&7敌对: &f{hostile_next_cap} &8({hostile_delta})"
+      - "&8总生物通常覆盖动物和敌对生物。"
+    action: ""
+  limit_vehicle:
+    index: 32
+    material: MINECART
+    name: "&e载具上限"
+    lore:
+      - "&7升级后: &f{vehicle_next_cap}"
+      - "&7变化: &a{vehicle_delta}"
+      - "&8包含矿车、船等载具实体。"
     action: ""
   unlock:
-    index: 24
+    index: 33
     material: DIAMOND_PICKAXE
     name: "&a解锁脚下区块"
     lore:
@@ -57,9 +108,7 @@ items:
       - "&7站在相邻的未解锁区块上使用。"
       - "&7消耗庄园额度，不消耗升级材料。"
       - ""
-      - "&7适合一点点向外扩建庭院、仓库、道路入口。"
       - "&c必须站在当前庄园相邻的未解锁区块。"
-      - ""
       - "&e点击解锁脚下区块"
     action: "command.unlock"
   back:

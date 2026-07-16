@@ -1,0 +1,78 @@
+title: "&0庄园控制器 - 成员"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: PLAYER_HEAD
+    name: "&a成员总览"
+    lore:
+      - "&7庄主: &f{owner_name}"
+      - "&7状态: &f{owner_status}"
+      - "&7在线: &f{total_online}&7/&f{total_count}"
+      - ""
+      - "&8这里先看总览，完整名单单独打开。"
+    action: ""
+  trusted:
+    index: 20
+    material: DIAMOND_HELMET
+    name: "&b共建人"
+    lore:
+      - "&7总数: &f{trusted_count}"
+      - "&7在线: &f{trusted_online}"
+      - "&7预览: &f{trusted_preview}"
+    action: ""
+  member:
+    index: 21
+    material: IRON_HELMET
+    name: "&a普通成员"
+    lore:
+      - "&7总数: &f{member_count}"
+      - "&7在线: &f{member_online}"
+      - "&7预览: &f{member_preview}"
+    action: ""
+  deny:
+    index: 22
+    material: REDSTONE_BLOCK
+    name: "&c黑名单"
+    lore:
+      - "&7总数: &f{deny_count}"
+      - "&7在线: &f{deny_online}"
+      - "&7预览: &f{deny_preview}"
+    action: ""
+  full:
+    index: 24
+    material: BOOK
+    name: "&e完整名单"
+    lore:
+      - "&7打开完整成员列表页。"
+      - "&8这里会列出庄主、共建人、普通成员和黑名单。"
+      - ""
+      - "&e点击打开"
+    action: "menu.members"
+  ops:
+    index: 25
+    material: WRITABLE_BOOK
+    name: "&e成员操作"
+    lore:
+      - "&8添加、移除、拉黑、踢出和名片。"
+      - "&7这些功能需要玩家名，当前继续使用聊天输入。"
+      - "&7此页集中列出真实命令和身份互斥规则。"
+      - ""
+      - "&e点击打开操作页"
+    action: "menu.controller.members.ops"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回控制器"
+    lore:
+      - "&7回到庄园控制器首页。"
+    action: "menu.controller"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭庄园控制器。"
+    action: "close"

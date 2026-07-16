@@ -1,5 +1,5 @@
 # GuildShelter 配置
-# 语言设置: zh_CN(中文) / en_US(英文)，语言文件在 plugins/GuildShelter/messages_*.yml
+# 语言设置: zh_CN(中文) / en_US(英文)，语言文件在 plugins/GuildShelter/lang/messages_*.yml
 language: zh_CN
 
 # 跨服模式：false=单服；true=通过代理的 PluginMessage 通道跨服传送
@@ -56,6 +56,10 @@ terrain-prep: CLEAR_VEGETATION
 # 安全落点：/gs home、/gs spawn 等传送落点若地表是水/岩浆，在那格铺一格"落脚台"防落水。
 safe-landing:
   water-pad-block: minecraft:glass   # 落脚台方块（如 minecraft:glass）；填 none 或留空 = 关闭，不铺台
+
+# 公会世界默认游戏规则。这里是世界级 gamerule，会作用于主城、道路、未领取区域和庄园。
+world-defaults:
+  keep-inventory: true   # 公会世界内死亡默认不掉落物品/经验；设 false 则回到原版掉落逻辑
 
 # 虚空(空岛)世界：用 /gs admin create <公会> VOID 创建的世界没有自然地表，按【空岛】处理——不铺路，
 # 每个庄园在锚定角给一块地基（玩家 /gs home 正好落在岛上）。两种方式二选一：
@@ -200,7 +204,7 @@ guild-hooks:
 # ============================ 性能优化 ============================
 performance:
 
-  # 掉落物定时清理任务（上限由 levels.yml manor.limits 的 drops 决定）：
+  # 掉落物定时清理任务（上限由 levels.yml manor.levels.<等级>.limits.drops 决定）：
   drop-cleanup:
     check-interval-seconds: 60   # 定时检查频率（秒）
     mode: clean                  # clean=清理最旧+拦截新 | block=只拦截新（不删存量）
@@ -258,6 +262,11 @@ multi-manor:
 # 说明：菜单数据模型平台中立，易变的 Inventory API 已隔离，后续模组联动 UI 走通道下发。
 ui:
   backend: auto
+
+# Built-in map bridge is deprecated. Keep this false and install the optional
+# GuildShelterXaeroMap addon for Xaero World Map highlights and map claiming.
+map:
+  builtin-xaero-bridge: false
 
 # ============================ 高级（一般不用动）============================
 advanced:

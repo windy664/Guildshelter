@@ -8,11 +8,12 @@ items:
     material: WHEAT
     name: "&d活动"
     lore:
-      - "&7围绕访客、好友和评价的轻量入口。"
-      - "&7适合活动期或开放参观时使用。"
+      - "&7当前花数: &f{flower_today}"
+      - "&7人气: &f{popularity}"
+      - "&7评分: &f{rating_avg} &8({rating_count} 票)"
+      - "&7你的评分: &f{my_rating}"
       - ""
-      - "&8能直接完成的互动保留点击。"
-      - "&8需要输入文字/分数的项目先做说明卡。"
+      - "&8送花、留言、评分和收件箱都从这里进。"
     action: ""
   flower:
     index: 20
@@ -20,10 +21,8 @@ items:
     name: "&d送花"
     lore:
       - "&8给喜欢的庄园一点反馈"
-      - "&7用于访客互动和人气展示。"
-      - "&7目标仍按你当前所在庄园解析。"
-      - ""
-      - "&7适合开放参观、建筑评选和好友串门。"
+      - "&7今天收到: &f{flower_today}"
+      - "&7人气: &f{popularity}"
       - ""
       - "&e点击送花"
     action: "command.flower"
@@ -32,57 +31,65 @@ items:
     material: OAK_SIGN
     name: "&a留言墙"
     lore:
-      - "&8留言展示说明"
-      - "&7留言墙用于集中展示访客反馈、"
-      - "&7合作提醒和活动记录。"
+      - "&8查看脚下庄园留言"
+      - "&7最近留言: &f{comment_count}"
+      - "&7最新: &f{comment_preview_1}"
       - ""
-      - "&7适合庄主回看访客评价，"
-      - "&7也适合做活动期间的公开记录。"
-      - ""
-      - "&8留言墙后续会做成独立列表页面。"
-      - "&8这里先展示用途，不触发刷屏。"
-    action: ""
+      - "&e点击打开留言墙"
+    action: "menu.controller.activity.board"
   comment:
     index: 22
     material: NAME_TAG
     name: "&a留言"
     lore:
-      - "&8文本留言说明"
-      - "&7可以给当前庄园主人留下一条消息。"
-      - "&7适合写参观感受、合作建议或活动备注。"
+      - "&8留下文本留言"
+      - "&7使用: &f{comment_hint}"
       - ""
-      - "&7因为需要输入文字，"
-      - "&7当前 GUI 暂不直接提交留言。"
-      - ""
-      - "&8这是说明卡"
+      - "&8当前先作为说明卡。"
     action: ""
   rate:
     index: 23
     material: NETHER_STAR
     name: "&e评分"
     lore:
-      - "&8评分说明"
-      - "&7评分用于开放参观、建筑比赛和排行榜统计。"
-      - "&7分数应由玩家明确输入，避免误触。"
+      - "&8为庄园打分"
+      - "&7平均分: &f{rating_avg}"
+      - "&7评分数: &f{rating_count}"
+      - "&7你的评分: &f{my_rating}"
       - ""
-      - "&7当前 GUI 暂不承载分数输入。"
-      - "&8后续可扩展成 1-5 星选择面板。"
-      - ""
-      - "&8这是说明卡"
-    action: ""
+      - "&e点击打开评分页"
+    action: "menu.controller.activity.rate"
   inbox:
     index: 24
     material: CHEST
     name: "&a收件箱"
     lore:
-      - "&8收到的互动说明"
-      - "&7用于集中查看留言、反馈和系统通知。"
-      - "&7适合庄主回看访客行为。"
+      - "&8查看收到的互动"
+      - "&7如果你是庄主，可以回看访客留言。"
+      - "&7收件箱会显示你拥有的庄园收到的留言。"
       - ""
-      - "&8收件箱后续会做成独立列表页面。"
-      - "&8这里先展示用途，不触发刷屏。"
-      - ""
-      - "&8这是说明卡"
+      - "&e点击查看收件箱"
+    action: "menu.controller.activity.inbox"
+  preview_1:
+    index: 29
+    material: PAPER
+    name: "&7最近留言 1"
+    lore:
+      - "&f{comment_preview_1}"
+    action: ""
+  preview_2:
+    index: 30
+    material: PAPER
+    name: "&7最近留言 2"
+    lore:
+      - "&f{comment_preview_2}"
+    action: ""
+  preview_3:
+    index: 31
+    material: PAPER
+    name: "&7最近留言 3"
+    lore:
+      - "&f{comment_preview_3}"
     action: ""
   back:
     index: 45
@@ -90,7 +97,6 @@ items:
     name: "&e返回控制器"
     lore:
       - "&7回到庄园控制器首页。"
-      - "&8继续选择资料、升级、护理或安保。"
     action: "menu.controller"
   close:
     index: 49
@@ -98,5 +104,4 @@ items:
     name: "&c关闭"
     lore:
       - "&7关闭庄园控制器。"
-      - "&8不会改变任何庄园设置。"
     action: "close"

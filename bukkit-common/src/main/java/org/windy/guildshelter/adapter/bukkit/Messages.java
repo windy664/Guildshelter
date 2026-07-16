@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 多语言消息管理。从 plugins/GuildShelter/messages_{lang}.yml 加载，
+ * 多语言消息管理。从 plugins/GuildShelter/lang/messages_{lang}.yml 加载，
  * 缺失 key 用中文 DEFAULTS 兜底。颜色码 § 保留在语言文件中。
  *
  * <p>key 命名：{category}.{command}.{detail}，如 {@code cmd.home.teleported}。
@@ -485,17 +485,27 @@ public final class Messages {
         messages.putAll(DEFAULTS);
 
         // 先尝试从 resources 加载默认文件到 dataFolder
-        String resourceName = "/messages_" + lang + ".yml";
-        InputStream res = Messages.class.getResourceAsStream(resourceName);
-        if (res != null) {
-            File langFile = new File(dataFolder, "messages_" + lang + ".yml");
-            if (!langFile.exists()) {
-                try (InputStreamReader reader = new InputStreamReader(res, StandardCharsets.UTF_8)) {
-                    YamlConfiguration cfg = YamlConfiguration.loadConfiguration(reader);
-                    cfg.save(langFile);
-                } catch (IOException ignored) {}
+        String fileLocale = messageFileLocale(lang);
+        String resourceName = "/lang/messages_" + fileLocale + ".yml";
+        try (InputStream res = Messages.class.getResourceAsStream(resourceName)) {
+            if (res != null) {
+                loadYamlInto(new InputStreamReader(res, StandardCharsets.UTF_8));
             }
-            // 从文件加载（覆盖 DEFAULTS）
+        } catch (IOException ignored) {}
+
+        File langFile = new File(new File(dataFolder, "lang"), "messages_" + fileLocale + ".yml");
+        if (!langFile.exists()) {
+            try (InputStream res = Messages.class.getResourceAsStream(resourceName)) {
+                if (res != null) {
+                    langFile.getParentFile().mkdirs();
+                    try (InputStreamReader reader = new InputStreamReader(res, StandardCharsets.UTF_8)) {
+                        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(reader);
+                        cfg.save(langFile);
+                    }
+                }
+            } catch (IOException ignored) {}
+        }
+        if (langFile.isFile()) {
             YamlConfiguration cfg = YamlConfiguration.loadConfiguration(langFile);
             for (String key : cfg.getKeys(true)) {
                 if (cfg.isString(key)) {
@@ -503,6 +513,29 @@ public final class Messages {
                 }
             }
         }
+    }
+
+    private static void loadYamlInto(InputStreamReader reader) {
+        YamlConfiguration cfg = YamlConfiguration.loadConfiguration(reader);
+        for (String key : cfg.getKeys(true)) {
+            if (cfg.isString(key)) {
+                messages.put(key, cfg.getString(key));
+            }
+        }
+    }
+
+    private static String messageFileLocale(String lang) {
+        if (lang == null || lang.isBlank()) {
+            return "zh_CN";
+        }
+        String normalized = lang.replace('-', '_');
+        if ("en".equalsIgnoreCase(normalized) || "en_US".equalsIgnoreCase(normalized)) {
+            return "en";
+        }
+        if ("zh_CN".equalsIgnoreCase(normalized)) {
+            return "zh_CN";
+        }
+        return normalized;
     }
 
     /** 获取消息，%s 等占位符由调用方替换。key 不存在时返回 key 本身。无参数时跳过 String.format。 */

@@ -32,3 +32,5 @@ include 'guildshelter-client'
 // 官方【附属插件】样板：农场（共享农场访问 A1 + 生长加速 A2 + 偷菜）。独立 Bukkit 插件,只 compileOnly
 // guildshelter-api,靠 只读 API + BuildCheckProvider + 监听原版事件实现,dogfooding 验证 API、也作第三方学习范例。
 include 'addon-farm'
+include 'addon-horde'
+include 'addon-xaero-map'

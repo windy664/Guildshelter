@@ -1,0 +1,7 @@
+name: GuildShelterXaeroMap
+version: '${version}'
+main: org.windy.guildshelter.xaero.XaeroMapAddonPlugin
+api-version: '1.21'
+author: windy
+description: Optional GuildShelter bridge for Xaero World Map territory highlights.
+depend: [GuildShelter]

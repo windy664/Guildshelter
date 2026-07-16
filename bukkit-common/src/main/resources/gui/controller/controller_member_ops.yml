@@ -1,0 +1,142 @@
+title: "&0庄园控制器 - 成员操作"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: WRITABLE_BOOK
+    name: "&e成员操作"
+    lore:
+      - "&7庄园: &f#{slot} &8| &7公会: &f{guild}"
+      - "&7在线: &f{total_online}&7/&f{total_count}"
+      - "&7共建: &f{trusted_count} &8| &7成员: &f{member_count} &8| &7黑名单: &c{deny_count}"
+      - ""
+      - "&8这里不做铁砧输入，玩家名继续走聊天命令。"
+      - "&8点击卡片不会执行危险操作。"
+    action: ""
+
+  trust:
+    index: 19
+    material: DIAMOND_HELMET
+    name: "&b添加共建人"
+    lore:
+      - "&8给予建设/常用交互管理身份。"
+      - "&7用法: &f/gs trust <玩家>"
+      - "&7当前: &f{trusted_count} &8| &7预览: &f{trusted_preview}"
+      - ""
+      - "&8添加为共建时会移除普通成员/黑名单身份。"
+    action: ""
+
+  untrust:
+    index: 20
+    material: CHAINMAIL_HELMET
+    name: "&b移除共建人"
+    lore:
+      - "&8撤销共建身份。"
+      - "&7用法: &f/gs untrust <玩家>"
+      - "&7当前共建: &f{trusted_preview}"
+    action: ""
+
+  member_add:
+    index: 21
+    material: IRON_HELMET
+    name: "&a添加普通成员"
+    lore:
+      - "&8给予受限成员身份。"
+      - "&7用法: &f/gs member add <玩家>"
+      - "&7当前: &f{member_count} &8| &7预览: &f{member_preview}"
+      - ""
+      - "&8添加为成员时会移除共建/黑名单身份。"
+    action: ""
+
+  member_remove:
+    index: 22
+    material: LEATHER_HELMET
+    name: "&a移除普通成员"
+    lore:
+      - "&8撤销普通成员身份。"
+      - "&7用法: &f/gs member remove <玩家>"
+      - "&7当前成员: &f{member_preview}"
+    action: ""
+
+  deny:
+    index: 23
+    material: REDSTONE_BLOCK
+    name: "&c加入黑名单"
+    lore:
+      - "&8限制特定玩家进入。"
+      - "&7用法: &f/gs deny <玩家>"
+      - "&7当前: &c{deny_count} &8| &7预览: &f{deny_preview}"
+      - ""
+      - "&8拉黑时会移除共建/成员身份。"
+    action: ""
+
+  undeny:
+    index: 24
+    material: REDSTONE_TORCH
+    name: "&c移出黑名单"
+    lore:
+      - "&8恢复访问资格。"
+      - "&7用法: &f/gs undeny <玩家>"
+      - "&7当前黑名单: &f{deny_preview}"
+    action: ""
+
+  kick:
+    index: 30
+    material: IRON_BOOTS
+    name: "&e踢出访客"
+    lore:
+      - "&8把非成员从你的庄园传送出去。"
+      - "&7用法: &f/gs kick <玩家>"
+      - ""
+      - "&8目标必须在线且在你的庄园世界内。"
+      - "&8成员及以上身份不能被踢出。"
+    action: ""
+
+  card:
+    index: 31
+    material: MAP
+    name: "&e庄园名片"
+    lore:
+      - "&8查看自己或指定玩家庄园摘要。"
+      - "&7用法: &f/gs card [玩家]"
+      - "&7可显示等级、别名、描述、成员数、评分和 Flag 摘要。"
+    action: ""
+
+  alias:
+    index: 32
+    material: NAME_TAG
+    name: "&e庄园别名"
+    lore:
+      - "&8设置展示名称。"
+      - "&7用法: &f/gs alias <名称>"
+      - "&7清空: &f/gs alias"
+      - ""
+      - "&8名称最长 50 字符。"
+    action: ""
+
+  full:
+    index: 40
+    material: BOOK
+    name: "&e完整名单"
+    lore:
+      - "&7查看庄主、共建人、普通成员和黑名单。"
+      - "&e点击打开名单页"
+    action: "menu.members"
+
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回成员页"
+    lore:
+      - "&7回到成员总览。"
+    action: "menu.controller.members"
+
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭成员操作页。"
+    action: "close"

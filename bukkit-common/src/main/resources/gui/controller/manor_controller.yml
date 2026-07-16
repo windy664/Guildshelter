@@ -67,6 +67,45 @@ items:
       - ""
       - "&e左键打开安保页"
     action: "menu.controller.security"
+  members:
+    index: 29
+    material: PLAYER_HEAD
+    name: "&a成员"
+    lore:
+      - "&8协作、成员和黑名单"
+      - "&7查看庄主、共建人、普通成员和黑名单总览。"
+      - "&7会显示在线人数和名单预览。"
+      - ""
+      - "&8完整名单可在成员页内继续打开。"
+      - ""
+      - "&e左键打开成员页"
+    action: "menu.controller.members"
+  limits:
+    index: 31
+    material: COMPARATOR
+    name: "&b限额监控"
+    lore:
+      - "&8实体、掉落物、机器与性能预算"
+      - "&7查看当前庄园的方块实体、掉落物、生物和载具数量。"
+      - "&7同时显示等级上限、剩余额度和接近上限提醒。"
+      - ""
+      - "&8适合排查卡顿、机器堆叠和放置失败原因。"
+      - ""
+      - "&e左键打开限额页"
+    action: "menu.controller.limits"
+  quick:
+    index: 33
+    material: COMPASS
+    name: "&e快捷操作"
+    lore:
+      - "&8只放插件已经有的无输入操作。"
+      - "&7回家、设家、出生点、中心、访客开放和维护入口。"
+      - "&7也包含解锁脚下区块、清理和搬家入口。"
+      - ""
+      - "&8需要输入文字或玩家名的功能继续走聊天命令。"
+      - ""
+      - "&e左键打开快捷操作"
+    action: "menu.controller.quick"
   activity:
     index: 40
     material: WHEAT

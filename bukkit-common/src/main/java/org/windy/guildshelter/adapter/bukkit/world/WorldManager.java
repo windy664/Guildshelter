@@ -1,12 +1,14 @@
 package org.windy.guildshelter.adapter.bukkit.world;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldBorder;
 import org.bukkit.WorldCreator;
 import org.windy.guildshelter.adapter.bukkit.GuildShelterConfig.IrisConfig;
 import org.windy.guildshelter.adapter.bukkit.GuildShelterConfig.OceanReseedConfig;
+import org.windy.guildshelter.adapter.bukkit.GuildShelterConfig.WorldDefaultsConfig;
 import org.windy.guildshelter.domain.layout.LayoutCalculator;
 import org.windy.guildshelter.domain.layout.SpiralIndex;
 import org.windy.guildshelter.domain.model.ChunkRegion;
@@ -39,6 +41,7 @@ public final class WorldManager implements WorldControl {
     private final LevelRules levels;
     private final OceanReseedConfig oceanReseed;
     private final IrisConfig iris;
+    private final WorldDefaultsConfig worldDefaults;
     private final Logger logger;
     /** 群系水域采样器（混合端注入；null = 纯 Bukkit，回退强制生成看地表液体）。见 {@link WaterBiomeSampler}。 */
     private WaterBiomeSampler biomeSampler;
@@ -50,10 +53,11 @@ public final class WorldManager implements WorldControl {
     private org.bukkit.Material waterLandingPad = org.bukkit.Material.GLASS;
 
     public WorldManager(LevelRules levels, OceanReseedConfig oceanReseed,
-                        IrisConfig iris, Logger logger) {
+                        IrisConfig iris, WorldDefaultsConfig worldDefaults, Logger logger) {
         this.levels = levels;
         this.oceanReseed = oceanReseed;
         this.iris = iris;
+        this.worldDefaults = worldDefaults;
         this.logger = logger;
     }
 
@@ -489,6 +493,7 @@ public final class WorldManager implements WorldControl {
     }
 
     private void applyBorderTo(World world, GuildWorld gw) {
+        applyDefaultGameRules(world);
         LayoutCalculator layout = new LayoutCalculator(gw.layout());
         WorldBorder border = world.getWorldBorder();
         double cx = layout.borderCenterBlockX() + (gw.originChunkX() << 4) + 0.5;
@@ -497,6 +502,14 @@ public final class WorldManager implements WorldControl {
         // 自适应边界：按【实际已分配成员】逐环生长 + 1 环缓冲（保证下一个加入者已在界内）。
         // 不再按等级/宿主上限预留满员大方框，世界紧贴实际占用（也更省加载区），且边界计算彻底脱离宿主插件。
         border.setSize(layout.adaptiveBorderSizeBlocks(gw.allocatedSlots(), 1));
+    }
+
+    private void applyDefaultGameRules(World world) {
+        try {
+            world.setGameRule(GameRule.KEEP_INVENTORY, worldDefaults.keepInventory());
+        } catch (Throwable t) {
+            logger.warning("[GuildShelter] 设置公会世界 keepInventory 规则失败: " + world.getName() + " / " + t);
+        }
     }
 
     /** 虚空生成器：所有 chunk 为空气，用于 VOID 地形模式。 */

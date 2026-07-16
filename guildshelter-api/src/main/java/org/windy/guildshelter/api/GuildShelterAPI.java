@@ -1,7 +1,9 @@
 package org.windy.guildshelter.api;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,6 +52,49 @@ public interface GuildShelterAPI {
 
     /** 玩家是否该公会会长/副会长。 */
     boolean isGuildAdmin(GuildRef guild, UUID player);
+
+    /**
+     * All known GuildShelter camp worlds.
+     *
+     * <p>Addons should schedule gameplay from GuildShelter camps, not from the
+     * backing guild plugin's guild list.
+     */
+    List<GuildRef> guildCamps();
+
+    /**
+     * Territory snapshot for a GuildShelter camp world.
+     *
+     * <p>This is the same shape as {@link #mapSnapshot(Player)} but without
+     * viewer-specific ownership coloring. Addons can use it for world-aware
+     * gameplay that needs unlocked chunks or road adjacency.
+     */
+    Optional<TerritoryMapSnapshot> campSnapshot(GuildRef camp);
+
+    /**
+     * 导出该玩家当前庄园的可迁移区域。
+     *
+     * <p>本方法只返回坐标和元数据，不复制方块、不修改数据。
+     */
+    Optional<GuildShelterMigrationRegion> exportManor(UUID owner);
+
+    /**
+     * 在目标公会中查找一个可迁入的空庄园区域。
+     *
+     * <p>目标公会不存在、没有空 slot，或目标庄园区域边长小于 {@code requiredSideChunks}
+     * 时返回 empty。本方法可能会确保目标公会世界加载，但不会创建庄园记录。
+     */
+    Optional<GuildShelterMigrationRegion> prepareManorImport(UUID owner, String targetGuild, int requiredSideChunks);
+
+    /**
+     * 迁移附属在成功复制方块后，提交目标庄园记录。
+     *
+     * <p>实现必须重新校验玩家仍无庄园、目标 slot 仍为空、目标公会未满。成功后该庄园区域会归属给玩家。
+     */
+    boolean completeManorImport(UUID owner, String targetGuild, int slot, int manorLevel);
+
+    Optional<TerritoryMapSnapshot> mapSnapshot(Player viewer);
+
+    MapClaimResult tryClaimMapChunk(Player player, int worldChunkX, int worldChunkZ);
 
     // ---- 保护决策参与（附属可在破坏/放置判定里额外放行/拒绝）----
 

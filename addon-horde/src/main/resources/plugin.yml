@@ -1,0 +1,15 @@
+name: GuildShelterHorde
+version: '${version}'
+main: org.windy.guildshelter.horde.HordeAddonPlugin
+api-version: '1.21'
+author: windy
+description: GuildShelter 营地尸潮附属：分波守城、bossbar 进度、结算奖励。
+depend: [GuildShelter]
+commands:
+  gshorde:
+    description: 管理 GuildShelter 营地尸潮活动。
+    usage: /gshorde <start|stop|status> [worldName]
+permissions:
+  guildshelter.horde.manage:
+    description: 启动、停止、查看 GuildShelter 营地尸潮。
+    default: op

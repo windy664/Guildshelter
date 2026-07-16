@@ -11,8 +11,12 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                                  StorageSettings storage, boolean crossServer, String serverName,
                                  PerformanceConfig performance, MoveConfig move, OceanReseedConfig oceanReseed,
                                  IrisConfig iris,
+                                 WorldDefaultsConfig worldDefaults,
                                  CityWallConfig cityWall, CityLimits cityLimits,
                                  HologramSettings holograms) {
+
+    /** 公会世界默认 gamerule。 */
+    public record WorldDefaultsConfig(boolean keepInventory) {}
 
     /**
      * 主城悬浮字设置（需 DecentHolograms 软依赖）。
@@ -72,31 +76,10 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
             boolean chunkUnloadEnabled, int chunkUnloadInactiveMinutes, int chunkUnloadCheckSeconds, boolean chunkUnloadKeepRoad
     ) {}
 
-    /** 读等级系统的某个 int：优先 levels.yml 的 {@code key}，缺则回退 config.yml 旧键 {@code legacyKey}，再缺用 {@code def}。 */
-    private static int lvl(FileConfiguration lv, String key, FileConfiguration cfg, String legacyKey, int def) {
+    /** 读 levels.yml 的某个 int；缺则用 {@code def}。 */
+    private static int lvl(FileConfiguration lv, String key, int def) {
         if (lv != null && lv.contains(key)) {
             return lv.getInt(key);
-        }
-        if (cfg.contains(legacyKey)) {
-            return cfg.getInt(legacyKey);
-        }
-        return def;
-    }
-
-    /**
-     * 同上，但 levels.yml 先试新键 {@code key}，再试<b>旧键</b> {@code lvFallbackKey}（键名重命名后的向后兼容），
-     * 仍缺才回退 config.yml 旧键 {@code legacyKey}，最后用 {@code def}。
-     */
-    private static int lvl(FileConfiguration lv, String key, String lvFallbackKey,
-                           FileConfiguration cfg, String legacyKey, int def) {
-        if (lv != null && lv.contains(key)) {
-            return lv.getInt(key);
-        }
-        if (lv != null && lv.contains(lvFallbackKey)) {
-            return lv.getInt(lvFallbackKey);
-        }
-        if (cfg.contains(legacyKey)) {
-            return cfg.getInt(legacyKey);
         }
         return def;
     }
@@ -145,6 +128,27 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
         return out;
     }
 
+    private static void collectLimitRow(
+            java.util.Map<String, java.util.TreeMap<Integer, Integer>> perLevel,
+            java.util.Set<String> machineIds,
+            int level,
+            org.bukkit.configuration.ConfigurationSection row) {
+        if (row == null) {
+            return;
+        }
+        for (String dim : row.getKeys(false)) {
+            String id = dim.toLowerCase(java.util.Locale.ROOT);
+            int value = row.getInt(dim, -1);
+            if (value < 0) {
+                continue;
+            }
+            perLevel.computeIfAbsent(id, k -> new java.util.TreeMap<>()).put(level, value);
+            if (org.windy.guildshelter.domain.rule.OptimizationLimit.fromKey(id) == null) {
+                machineIds.add(id);
+            }
+        }
+    }
+
     private static int maxConfiguredLevel(java.util.Map<Integer, ?> map, int fallback) {
         return map.keySet().stream().mapToInt(Integer::intValue).max().orElse(fallback);
     }
@@ -155,15 +159,13 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
      * @param serverCfg 本服标识配置 server.yml（不随 jar 打包，首启按服务器目录名生成）。
      */
     public static GuildShelterConfig from(FileConfiguration cfg, FileConfiguration lv, FileConfiguration serverCfg) {
-        int plotInitial = lvl(lv, "manor.initial-chunks", cfg, "member-plot.initial-chunks", 6);
-        int plotMax = lvl(lv, "manor.max-chunks", cfg, "member-plot.max-chunks", 15);
+        int plotInitial = lvl(lv, "manor.initial-chunks", 6);
+        int plotMax = lvl(lv, "manor.max-chunks", 15);
 
         // 主城解锁额度边长：新键 *-unlock-chunks，向后兼容旧键 *-chunks 与 config.yml。
         // ⚠ 这只是"会长能在中心一格里解锁建造多少格"，主城【物理大小】恒等于中心一格 = plotMax（满级庄园大小）。
-        int cityInitial = lvl(lv, "guild.main-city.initial-unlock-chunks", "guild.main-city.initial-chunks",
-                cfg, "main-city.initial-chunks", 3);
-        int cityMax = lvl(lv, "guild.main-city.max-unlock-chunks", "guild.main-city.max-chunks",
-                cfg, "main-city.max-chunks", 10);
+        int cityInitial = lvl(lv, "guild.main-city.initial-unlock-chunks", 3);
+        int cityMax = lvl(lv, "guild.main-city.max-unlock-chunks", 10);
         // 夹紧而非抛异常：额度不能超过中心格容量(plotMax²)——超了 LayoutConfig 会抛、插件直接起不来。这里夹+告警，
         // 服主配错也能启动（修了"主城 max 配得比庄园大 → 崩服"的坑，与参数名误导一并解决）。
         if (cityMax > plotMax) {
@@ -201,7 +203,7 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 ? lv.getInt("manor.max-level")
                 : LevelRules.DEFAULT_MANOR_MAX_LEVEL;
         manorMaxLevel = Math.max(manorMaxLevel, maxConfiguredLevel(manorQuotas, manorMaxLevel));
-        int guildMaxLevel = lvl(lv, "guild.max-level", cfg, "guild.max-level", 5);
+        int guildMaxLevel = lvl(lv, "guild.max-level", 5);
         guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildMemberCaps, guildMaxLevel));
         guildMaxLevel = Math.max(guildMaxLevel, maxConfiguredLevel(guildCityQuotas, guildMaxLevel));
         LevelRules levels = new LevelRules(
@@ -236,29 +238,26 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cfg.getString("storage.mysql.user", "root"),
                 cfg.getString("storage.mysql.password", ""));
 
-        // 庄园等级优化限制：levels.yml 的 manor.limits.<等级>.<维度>=上限（里程碑+向下继承）。
+        // 庄园等级优化限制：优先读取 levels.yml 的 manor.levels.<等级>.limits.<维度>=上限（里程碑+向下继承）。
         // 维度 = 优化量枚举 id（drops/tiles/animal/hostile/mob/vehicle）或机器命名空间 id；非枚举者归为机器。
         java.util.Map<String, java.util.TreeMap<Integer, Integer>> perLevel = new java.util.HashMap<>();
         java.util.Set<String> machineIds = new java.util.HashSet<>();
-        org.bukkit.configuration.ConfigurationSection limSec =
-                lv == null ? null : lv.getConfigurationSection("manor.limits");
-        if (limSec != null) {
-            for (String lvlKey : limSec.getKeys(false)) {
+        org.bukkit.configuration.ConfigurationSection manorLevels =
+                lv == null ? null : lv.getConfigurationSection("manor.levels");
+        if (manorLevels != null) {
+            for (String lvlKey : manorLevels.getKeys(false)) {
                 int level;
                 try {
                     level = Integer.parseInt(lvlKey.trim());
                 } catch (NumberFormatException e) {
                     continue;
                 }
-                org.bukkit.configuration.ConfigurationSection row = limSec.getConfigurationSection(lvlKey);
-                if (row == null) continue;
-                for (String dim : row.getKeys(false)) {
-                    String id = dim.toLowerCase(java.util.Locale.ROOT);
-                    perLevel.computeIfAbsent(id, k -> new java.util.TreeMap<>()).put(level, row.getInt(dim, -1));
-                    if (org.windy.guildshelter.domain.rule.OptimizationLimit.fromKey(id) == null) {
-                        machineIds.add(id); // 非枚举维度 = 机器
-                    }
+                org.bukkit.configuration.ConfigurationSection row = manorLevels.getConfigurationSection(lvlKey);
+                if (row == null) {
+                    continue;
                 }
+                org.bukkit.configuration.ConfigurationSection limits = row.getConfigurationSection("limits");
+                collectLimitRow(perLevel, machineIds, level, limits);
             }
         }
         org.windy.guildshelter.domain.rule.quota.QuotaRegistry quotas =
@@ -304,6 +303,9 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cfg.getBoolean("iris.broadcast-world-creation", true),
                 cfg.getBoolean("iris.unload-spawn", true));
 
+        WorldDefaultsConfig worldDefaults = new WorldDefaultsConfig(
+                cfg.getBoolean("world-defaults.keep-inventory", true));
+
         CityWallConfig cityWall = new CityWallConfig(
                 cfg.getBoolean("city-wall.enabled", false), // 主城已缩小成中心一格、四面环路，围墙暂关
                 cfg.getString("city-wall.block", "minecraft:cobblestone_wall"),
@@ -323,6 +325,7 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cfg.getInt("main-city-holograms.max-per-guild", 5),
                 cfg.getStringList("main-city-holograms.papi-whitelist"));
 
-        return new GuildShelterConfig(layout, levels, prep, storage, crossServer, serverName, perf, move, oceanReseed, iris, cityWall, cityLimits, holograms);
+        return new GuildShelterConfig(layout, levels, prep, storage, crossServer, serverName, perf, move,
+                oceanReseed, iris, worldDefaults, cityWall, cityLimits, holograms);
     }
 }

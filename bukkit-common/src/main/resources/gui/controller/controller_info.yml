@@ -84,7 +84,7 @@ items:
       - "&7黑名单适合拒绝特定访客。"
       - ""
       - "&e点击查看"
-    action: "menu.members"
+    action: "menu.controller.members"
   back:
     index: 45
     material: ARROW

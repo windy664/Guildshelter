@@ -1,0 +1,16 @@
+// GuildShelterHorde: optional server-side camp defense addon.
+base {
+    archivesName = 'guildshelter-horde'
+}
+
+dependencies {
+    compileOnly 'org.spigotmc:spigot-api:26.2-R0.1-SNAPSHOT'
+    compileOnly project(':guildshelter-api')
+}
+
+processResources {
+    def ver = project.version.toString()
+    filesMatching('plugin.yml') {
+        expand(version: ver)
+    }
+}

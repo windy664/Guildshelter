@@ -1,0 +1,100 @@
+title: "&0庄园控制器 - 评分"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: NETHER_STAR
+    name: "&e评分"
+    lore:
+      - "&7平均分: &f{rating_avg}"
+      - "&7评分数: &f{rating_count}"
+      - "&7你的评分: &f{my_rating}"
+      - ""
+      - "&8点击数字即可保存评分并返回活动页。"
+    action: ""
+  s1:
+    index: 20
+    material: PAPER
+    name: "&f1 分"
+    lore:
+      - "&7点击提交 1 分评分"
+    action: "menu.controller.activity.rate.1"
+  s2:
+    index: 21
+    material: PAPER
+    name: "&f2 分"
+    lore:
+      - "&7点击提交 2 分评分"
+    action: "menu.controller.activity.rate.2"
+  s3:
+    index: 22
+    material: PAPER
+    name: "&f3 分"
+    lore:
+      - "&7点击提交 3 分评分"
+    action: "menu.controller.activity.rate.3"
+  s4:
+    index: 23
+    material: PAPER
+    name: "&f4 分"
+    lore:
+      - "&7点击提交 4 分评分"
+    action: "menu.controller.activity.rate.4"
+  s5:
+    index: 24
+    material: PAPER
+    name: "&f5 分"
+    lore:
+      - "&7点击提交 5 分评分"
+    action: "menu.controller.activity.rate.5"
+  s6:
+    index: 29
+    material: PAPER
+    name: "&f6 分"
+    lore:
+      - "&7点击提交 6 分评分"
+    action: "menu.controller.activity.rate.6"
+  s7:
+    index: 30
+    material: PAPER
+    name: "&f7 分"
+    lore:
+      - "&7点击提交 7 分评分"
+    action: "menu.controller.activity.rate.7"
+  s8:
+    index: 31
+    material: PAPER
+    name: "&f8 分"
+    lore:
+      - "&7点击提交 8 分评分"
+    action: "menu.controller.activity.rate.8"
+  s9:
+    index: 32
+    material: PAPER
+    name: "&f9 分"
+    lore:
+      - "&7点击提交 9 分评分"
+    action: "menu.controller.activity.rate.9"
+  s10:
+    index: 33
+    material: PAPER
+    name: "&f10 分"
+    lore:
+      - "&7点击提交 10 分评分"
+    action: "menu.controller.activity.rate.10"
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回活动页"
+    lore:
+      - "&7回到活动总览。"
+    action: "menu.controller.activity"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭庄园控制器。"
+    action: "close"

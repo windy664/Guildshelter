@@ -8,11 +8,12 @@ items:
     material: SHIELD
     name: "&c金库与安保"
     lore:
-      - "&7管理访客、黑名单、Flag 与审计记录。"
-      - "&7适合开放参观前检查风险。"
+      - "&7访客状态: &f{visitor_status}"
+      - "&7进入规则: &f{entry_policy}"
+      - "&7离开规则: &f{exit_policy}"
+      - "&7入场费: &e{price_text}"
       - ""
-      - "&8能直接完成的动作可点击。"
-      - "&8需要输入玩家名的项目先做说明卡。"
+      - "&8这里集中展示访问、交互、黑名单和审计状态。"
     action: ""
   open:
     index: 20
@@ -20,11 +21,11 @@ items:
     name: "&a临时开放访客"
     lore:
       - "&8临时允许访客进入"
-      - "&7默认开放 60 分钟，适合展示、评分或活动。"
-      - "&7开放期间访客规则按庄园 Flag 执行。"
+      - "&7当前: &f{visitor_status}"
+      - "&7提示: &f{visitor_action_hint}"
       - ""
-      - "&7适合建筑评选、好友参观、公开活动。"
-      - "&c开放不代表允许破坏，仍受权限保护。"
+      - "&7默认开放 60 分钟，适合展示、评分或活动。"
+      - "&c开放不代表允许破坏，仍受权限和 Flag 保护。"
       - ""
       - "&e点击开放 60 分钟"
     action: "command.open.60"
@@ -34,54 +35,86 @@ items:
     name: "&c关闭访客"
     lore:
       - "&8恢复私有访问"
-      - "&7立即关闭临时开放状态。"
-      - "&7已信任成员仍按权限进入。"
+      - "&7当前: &f{visitor_status}"
+      - "&7进入规则: &f{entry_policy}"
       - ""
-      - "&7适合活动结束、维护建筑或整理仓库时使用。"
+      - "&7会立即取消临时开放状态。"
+      - "&7已信任成员仍按权限进入。"
       - ""
       - "&e点击关闭访客"
     action: "command.close"
-  flag:
+  entry_rules:
     index: 22
     material: REDSTONE_TORCH
-    name: "&eFlag 设置"
+    name: "&e进出规则"
     lore:
-      - "&8细分行为规则说明"
-      - "&7Flag 用来控制庄园行为策略，"
-      - "&7例如交互、容器、提示、PVP 等。"
+      - "&7进入: &f{entry_policy}"
+      - "&7离开: &f{exit_policy}"
+      - "&7PVP: &f{pvp_status}"
+      - "&7自定义 Flag: &f{flag_custom_count} 项"
       - ""
-      - "&7适合进阶庄主微调访问边界。"
-      - "&7普通开放参观通常不需要改。"
+      - "&8进出规则来自 deny-entry / deny-exit。"
+      - "&8临时开放会允许访客进入，但不改变 Flag。"
       - ""
-      - "&8当前 GUI 暂不承载具体 Flag 编辑。"
-    action: ""
-  deny:
+      - "&e点击打开安保开关"
+    action: "menu.controller.flags"
+  interaction_rules:
     index: 23
+    material: LEVER
+    name: "&e访客交互"
+    lore:
+      - "&7普通交互: &f{use_status}"
+      - "&7容器: &f{container_status}"
+      - "&7载具: &f{vehicle_status}"
+      - ""
+      - "&8这些状态决定访客能否使用门、按钮、容器、船和矿车。"
+      - "&8成员和管理员仍按权限体系放行。"
+      - ""
+      - "&e点击打开安保开关"
+    action: "menu.controller.flags"
+  deny:
+    index: 24
     material: REDSTONE_BLOCK
     name: "&c黑名单"
     lore:
-      - "&8拒绝特定玩家说明"
-      - "&7黑名单用于限制不受欢迎的访客。"
-      - "&7适合处理恶意参观、骚扰或破坏风险。"
+      - "&7黑名单人数: &f{deny_count}"
+      - "&7共建人: &f{trusted_count}"
+      - "&7普通成员: &f{member_count}"
       - ""
-      - "&7需要指定玩家名，GUI 暂不直接输入。"
-      - "&8以后可以扩展成玩家选择列表。"
+      - "&8黑名单用于限制特定玩家进入。"
+      - "&8添加或移除对象仍需要玩家选择/命令输入。"
+    action: ""
+  messages:
+    index: 30
+    material: OAK_SIGN
+    name: "&a进出提示"
+    lore:
+      - "&7进入提示: &f{greeting_status}"
+      - "&7离开提示: &f{farewell_status}"
+      - "&7显示方式: &f{titles_status}"
+      - "&7成员通知: &f{notify_status}"
       - ""
-      - "&8这是说明卡"
+      - "&8用于活动参观、庄园介绍和成员提醒。"
+    action: ""
+  economy:
+    index: 31
+    material: GOLD_INGOT
+    name: "&e入场收费"
+    lore:
+      - "&7当前费用: &e{price_text}"
+      - ""
+      - "&8大于 0 时访客进入会尝试通过 Vault 扣费。"
+      - "&8成员、共建人和管理员不按访客入场费处理。"
     action: ""
   log:
-    index: 24
+    index: 32
     material: PAPER
     name: "&e审计日志"
     lore:
-      - "&8关键变更记录"
-      - "&7用于追踪升级、区块解锁、权限调整等操作。"
-      - "&7适合管理员排查谁在什么时候改了什么。"
+      - "&7状态: &f{audit_status}"
       - ""
-      - "&8日志列表后续会做成独立页面。"
-      - "&8这里先展示用途，不触发刷屏。"
-      - ""
-      - "&8这是说明卡"
+      - "&8用于追踪升级、解锁、权限调整等操作。"
+      - "&8日志翻页仍走 /gs log，后续可拆成独立 GUI。"
     action: ""
   back:
     index: 45

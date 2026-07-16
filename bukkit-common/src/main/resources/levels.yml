@@ -1,382 +1,384 @@
-# ════════════════════════ GuildShelter 等级系统 ════════════════════════
+# GuildShelter 等级配置
 #
-# 这里集中管理两套等级体系：
-#   · 【庄园等级】—— 成员个人地皮，等级决定【解锁额度上限】(能拥有多少个已解锁 chunk)。
-#   · 【公会等级】—— 整个营地，决定【成员容量】与【主城解锁额度】。
-#
-# 独立成文件是为了方便以后扩展——每级的特权 / 费用 / 解锁功能等都加在这里。
-# 单位：chunk = 16×16 方块。额度 = 已解锁的 chunk 数。
-#
-# 庄园默认采用 1~20 级成长。
-# 重要：max-chunks 是单块庄园的物理地块边长上限，默认 15x15=225 chunk。
-# 庄园等级只决定【已解锁 chunk 额度】，不会把物理地块变成 20 档不同边界。
-# 性能优化(掉落物/方块实体/机器等)也按【庄园等级】缩放，由 manor.limits 控制。
+# 现在按“一个等级一组配置”组织：
+# - manor.levels.<等级>: 庄园解锁额度、升级成本、升级命令、优化限制
+# - guild.levels.<等级>: 公会时代名、成员上限、主城解锁额度
 
-# ───────────────────────── 庄园等级（成员个人地皮）─────────────────────────
 manor:
-  max-level: 20          # 庄园等级数；默认安排 1~20 级，满级后不能再升
-  initial-chunks: 6      # 1 级解锁正方形边长 → 初始额度 6²=36（首次分配就整好这块）
-  max-chunks: 15         # 单块庄园物理边长上限 15x15；20 级最多解锁 225 个 chunk
+  max-level: 20
+  initial-chunks: 6
+  max-chunks: 15
 
-  # 每级庄园已解锁 chunk 额度上限。
-  # 这些值是【额度】不是边长；玩家在 15x15 物理地块内逐步解锁可建造 chunk。
   levels:
-    1: { unlock-chunks: 36 }
-    2: { unlock-chunks: 45 }
-    3: { unlock-chunks: 54 }
-    4: { unlock-chunks: 64 }
-    5: { unlock-chunks: 74 }
-    6: { unlock-chunks: 84 }
-    7: { unlock-chunks: 95 }
-    8: { unlock-chunks: 106 }
-    9: { unlock-chunks: 118 }
-    10: { unlock-chunks: 130 }
-    11: { unlock-chunks: 142 }
-    12: { unlock-chunks: 155 }
-    13: { unlock-chunks: 168 }
-    14: { unlock-chunks: 181 }
-    15: { unlock-chunks: 194 }
-    16: { unlock-chunks: 205 }
-    17: { unlock-chunks: 213 }
-    18: { unlock-chunks: 219 }
-    19: { unlock-chunks: 223 }
-    20: { unlock-chunks: 225 }
-
-  # ── 每个庄园【等级】的优化限制（"几级能有多少"）──────────────────────────
-  # 写法：里程碑 + 向下继承。只写你要设的等级，中间没写的等级【沿用下面最近一个写过的等级】。
-  #   维度：tiles=方块实体总数  drops=掉落物  animal/hostile/mob/vehicle=生物/载具  或机器命名空间 id
-  #   没写进表的维度 = 不限（生物/载具则沿用玩家 /gs flag 自调）。
-  #   有效上限 = 这里的等级值 + 管理员增量（/gs admin limit），再与玩家自调 cap 取紧。
-  limits:
     1:
-      tiles: 300
-      drops: 200
-      animal: 20
-      hostile: 10
-      mob: 30
-      vehicle: 6
-      "minecraft:hopper": 4
-      "minecraft:blast_furnace": 2
-    2:
-      tiles: 380
-      drops: 230
-      animal: 24
-      hostile: 12
-      mob: 36
-      vehicle: 7
-      "minecraft:hopper": 5
-      "minecraft:blast_furnace": 2
-    3:
-      tiles: 460
-      drops: 260
-      animal: 28
-      hostile: 14
-      mob: 42
-      vehicle: 8
-      "minecraft:hopper": 6
-      "minecraft:blast_furnace": 3
-    4:
-      tiles: 540
-      drops: 290
-      animal: 32
-      hostile: 16
-      mob: 48
-      vehicle: 9
-      "minecraft:hopper": 7
-      "minecraft:blast_furnace": 3
-    5:
-      tiles: 620
-      drops: 320
-      animal: 36
-      hostile: 18
-      mob: 54
-      vehicle: 10
-      "minecraft:hopper": 8
-      "minecraft:blast_furnace": 4
-    6:
-      tiles: 700
-      drops: 350
-      animal: 40
-      hostile: 20
-      mob: 60
-      vehicle: 11
-      "minecraft:hopper": 9
-      "minecraft:blast_furnace": 4
-    7:
-      tiles: 780
-      drops: 380
-      animal: 44
-      hostile: 22
-      mob: 66
-      vehicle: 12
-      "minecraft:hopper": 10
-      "minecraft:blast_furnace": 5
-    8:
-      tiles: 860
-      drops: 410
-      animal: 48
-      hostile: 24
-      mob: 72
-      vehicle: 13
-      "minecraft:hopper": 11
-      "minecraft:blast_furnace": 5
-    9:
-      tiles: 940
-      drops: 440
-      animal: 52
-      hostile: 26
-      mob: 78
-      vehicle: 14
-      "minecraft:hopper": 12
-      "minecraft:blast_furnace": 6
-    10:
-      tiles: 1020
-      drops: 470
-      animal: 56
-      hostile: 28
-      mob: 84
-      vehicle: 15
-      "minecraft:hopper": 14
-      "minecraft:blast_furnace": 6
-      # 模组机器示例：装了对应模组后，取消注释并确认机器 id 正确。
-      # "mekanism:basic_factory": 8
-      # "mekanism:digital_miner": 1
-      # "thermal:machine_furnace": 8
-    11:
-      tiles: 1100
-      drops: 500
-      animal: 60
-      hostile: 30
-      mob: 90
-      vehicle: 16
-      "minecraft:hopper": 16
-      "minecraft:blast_furnace": 7
-    12:
-      tiles: 1180
-      drops: 530
-      animal: 64
-      hostile: 32
-      mob: 96
-      vehicle: 17
-      "minecraft:hopper": 18
-      "minecraft:blast_furnace": 7
-    13:
-      tiles: 1260
-      drops: 560
-      animal: 68
-      hostile: 34
-      mob: 102
-      vehicle: 18
-      "minecraft:hopper": 20
-      "minecraft:blast_furnace": 8
-    14:
-      tiles: 1340
-      drops: 590
-      animal: 72
-      hostile: 36
-      mob: 108
-      vehicle: 19
-      "minecraft:hopper": 22
-      "minecraft:blast_furnace": 8
-    15:
-      tiles: 1420
-      drops: 620
-      animal: 76
-      hostile: 38
-      mob: 114
-      vehicle: 20
-      "minecraft:hopper": 24
-      "minecraft:blast_furnace": 9
-    16:
-      tiles: 1500
-      drops: 660
-      animal: 80
-      hostile: 42
-      mob: 122
-      vehicle: 22
-      "minecraft:hopper": 27
-      "minecraft:blast_furnace": 10
-    17:
-      tiles: 1580
-      drops: 700
-      animal: 84
-      hostile: 46
-      mob: 130
-      vehicle: 24
-      "minecraft:hopper": 30
-      "minecraft:blast_furnace": 11
-    18:
-      tiles: 1660
-      drops: 760
-      animal: 90
-      hostile: 50
-      mob: 138
-      vehicle: 26
-      "minecraft:hopper": 33
-      "minecraft:blast_furnace": 12
-    19:
-      tiles: 1740
-      drops: 830
-      animal: 96
-      hostile: 55
-      mob: 146
-      vehicle: 28
-      "minecraft:hopper": 36
-      "minecraft:blast_furnace": 14
-    20:
-      tiles: 1820
-      drops: 900
-      animal: 100
-      hostile: 60
-      mob: 150
-      vehicle: 30
-      "minecraft:hopper": 40
-      "minecraft:blast_furnace": 16
+      unlock-chunks: 36
+      limits:
+        tiles: 300
+        drops: 200
+        animal: 20
+        hostile: 10
+        mob: 30
+        vehicle: 6
+        "minecraft:hopper": 4
+        "minecraft:blast_furnace": 2
 
-  # 玩家执行 /gs upgrade 升级庄园时消耗的成本。
-  # 键 = 升到的目标等级；money 走 Vault；items 只从玩家背包扣除。
-  # 物品格式: "材料ID:数量"，例如 "minecraft:stone:64"。可替换为模组物品 id。
-  upgrade-costs:
-    levels:
-      2:
+    2:
+      unlock-chunks: 45
+      upgrade:
         money: 1000
         items: ["minecraft:oak_log:400", "minecraft:cobblestone:400", "minecraft:oak_planks:5"]
-      3:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 380
+        drops: 230
+        animal: 24
+        hostile: 12
+        mob: 36
+        vehicle: 7
+        "minecraft:hopper": 5
+        "minecraft:blast_furnace": 2
+
+    3:
+      unlock-chunks: 54
+      upgrade:
         money: 2500
         items: ["minecraft:oak_planks:20", "minecraft:stone_bricks:20", "minecraft:iron_ingot:5"]
-      4:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 460
+        drops: 260
+        animal: 28
+        hostile: 14
+        mob: 42
+        vehicle: 8
+        "minecraft:hopper": 6
+        "minecraft:blast_furnace": 3
+
+    4:
+      unlock-chunks: 64
+      upgrade:
         money: 5000
         items: ["minecraft:oak_planks:20", "minecraft:stone_bricks:20", "minecraft:white_concrete:5", "minecraft:iron_nugget:5"]
-      5:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 540
+        drops: 290
+        animal: 32
+        hostile: 16
+        mob: 48
+        vehicle: 9
+        "minecraft:hopper": 7
+        "minecraft:blast_furnace": 3
+
+    5:
+      unlock-chunks: 74
+      upgrade:
         money: 8000
         items: ["minecraft:granite:10", "minecraft:stone_bricks:30", "minecraft:white_concrete:5", "minecraft:iron_ingot:5"]
-      6:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 620
+        drops: 320
+        animal: 36
+        hostile: 18
+        mob: 54
+        vehicle: 10
+        "minecraft:hopper": 8
+        "minecraft:blast_furnace": 4
+
+    6:
+      unlock-chunks: 84
+      upgrade:
         money: 12000
         items: ["minecraft:granite:15", "minecraft:stone_bricks:30", "minecraft:white_concrete:10", "minecraft:iron_ingot:10"]
-      7:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 700
+        drops: 350
+        animal: 40
+        hostile: 20
+        mob: 60
+        vehicle: 11
+        "minecraft:hopper": 9
+        "minecraft:blast_furnace": 4
+
+    7:
+      unlock-chunks: 95
+      upgrade:
         money: 18000
         items: ["minecraft:glass:15", "minecraft:stone_bricks:30", "minecraft:white_concrete:15", "minecraft:iron_ingot:10"]
-      8:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 780
+        drops: 380
+        animal: 44
+        hostile: 22
+        mob: 66
+        vehicle: 12
+        "minecraft:hopper": 10
+        "minecraft:blast_furnace": 5
+
+    8:
+      unlock-chunks: 106
+      upgrade:
         money: 26000
         items: ["minecraft:glass:15", "minecraft:stone_bricks:30", "minecraft:white_concrete:15", "minecraft:copper_ingot:10"]
-      9:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 860
+        drops: 410
+        animal: 48
+        hostile: 24
+        mob: 72
+        vehicle: 13
+        "minecraft:hopper": 11
+        "minecraft:blast_furnace": 5
+
+    9:
+      unlock-chunks: 118
+      upgrade:
         money: 36000
         items: ["minecraft:quartz:25", "minecraft:leather:15", "minecraft:white_concrete:20", "minecraft:copper_ingot:15"]
-      10:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 940
+        drops: 440
+        animal: 52
+        hostile: 26
+        mob: 78
+        vehicle: 14
+        "minecraft:hopper": 12
+        "minecraft:blast_furnace": 6
+
+    10:
+      unlock-chunks: 130
+      upgrade:
         money: 50000
         items: ["minecraft:white_concrete:30", "minecraft:iron_bars:20", "minecraft:string:15", "minecraft:slime_ball:15"]
-      11:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e10 §f级，进入中期庄园阶段！"
+      limits:
+        tiles: 1020
+        drops: 470
+        animal: 56
+        hostile: 28
+        mob: 84
+        vehicle: 15
+        "minecraft:hopper": 14
+        "minecraft:blast_furnace": 6
+        # Heavy machine examples. Uncomment and adjust only after confirming the block id on your server.
+        # "mekanism:basic_factory": 8
+        # "mekanism:digital_miner": 1
+        # "thermal:machine_furnace": 8
+        # "ae2:controller": 1
+
+    11:
+      unlock-chunks: 142
+      upgrade:
         money: 65000
         items: ["minecraft:white_concrete:30", "minecraft:glass:20", "minecraft:redstone:15", "minecraft:honeycomb:15"]
-      12:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1100
+        drops: 500
+        animal: 60
+        hostile: 30
+        mob: 90
+        vehicle: 16
+        "minecraft:hopper": 16
+        "minecraft:blast_furnace": 7
+
+    12:
+      unlock-chunks: 155
+      upgrade:
         money: 82000
         items: ["minecraft:white_concrete:30", "minecraft:leather:20", "minecraft:quartz:15", "minecraft:slime_ball:15"]
-      13:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1180
+        drops: 530
+        animal: 64
+        hostile: 32
+        mob: 96
+        vehicle: 17
+        "minecraft:hopper": 18
+        "minecraft:blast_furnace": 7
+
+    13:
+      unlock-chunks: 168
+      upgrade:
         money: 100000
         items: ["minecraft:white_concrete:30", "minecraft:diamond:20", "minecraft:string:15", "minecraft:brick:15"]
-      14:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1260
+        drops: 560
+        animal: 68
+        hostile: 34
+        mob: 102
+        vehicle: 18
+        "minecraft:hopper": 20
+        "minecraft:blast_furnace": 8
+
+    14:
+      unlock-chunks: 181
+      upgrade:
         money: 120000
         items: ["minecraft:white_concrete:30", "minecraft:emerald:20", "minecraft:string:20", "minecraft:brick:20"]
-      15:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1340
+        drops: 590
+        animal: 72
+        hostile: 36
+        mob: 108
+        vehicle: 19
+        "minecraft:hopper": 22
+        "minecraft:blast_furnace": 8
+
+    15:
+      unlock-chunks: 194
+      upgrade:
         money: 145000
         items: ["minecraft:white_concrete:30", "minecraft:redstone:20", "minecraft:leather:20", "minecraft:copper_ingot:20"]
-      16:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1420
+        drops: 620
+        animal: 76
+        hostile: 38
+        mob: 114
+        vehicle: 20
+        "minecraft:hopper": 24
+        "minecraft:blast_furnace": 9
+
+    16:
+      unlock-chunks: 205
+      upgrade:
         money: 170000
         items: ["minecraft:white_concrete:30", "minecraft:diamond:20", "minecraft:leather:20", "minecraft:deepslate_tiles:20"]
-      17:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1500
+        drops: 660
+        animal: 80
+        hostile: 42
+        mob: 122
+        vehicle: 22
+        "minecraft:hopper": 27
+        "minecraft:blast_furnace": 10
+
+    17:
+      unlock-chunks: 213
+      upgrade:
         money: 200000
         items: ["minecraft:white_concrete:30", "minecraft:redstone:20", "minecraft:string:20", "minecraft:brick:20"]
-      18:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1580
+        drops: 700
+        animal: 84
+        hostile: 46
+        mob: 130
+        vehicle: 24
+        "minecraft:hopper": 30
+        "minecraft:blast_furnace": 11
+
+    18:
+      unlock-chunks: 219
+      upgrade:
         money: 235000
         items: ["minecraft:white_concrete:30", "minecraft:redstone:20", "minecraft:string:20", "minecraft:brick:20"]
-      19:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1660
+        drops: 760
+        animal: 90
+        hostile: 50
+        mob: 138
+        vehicle: 26
+        "minecraft:hopper": 33
+        "minecraft:blast_furnace": 12
+
+    19:
+      unlock-chunks: 223
+      upgrade:
         money: 275000
         items: ["minecraft:copper_ingot:20", "minecraft:iron_ingot:20", "minecraft:white_concrete:30", "minecraft:leather:20"]
-      20:
+        commands:
+          - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
+      limits:
+        tiles: 1740
+        drops: 830
+        animal: 96
+        hostile: 55
+        mob: 146
+        vehicle: 28
+        "minecraft:hopper": 36
+        "minecraft:blast_furnace": 14
+
+    20:
+      unlock-chunks: 225
+      upgrade:
         money: 320000
         items: ["minecraft:white_concrete:30", "minecraft:netherite_scrap:20", "minecraft:leather:20", "minecraft:iron_ingot:20"]
+        commands:
+          - "broadcast §6%player% §f的庄园已升级到 §e20 §f级，达成满级！"
+      limits:
+        tiles: 1820
+        drops: 900
+        animal: 100
+        hostile: 60
+        mob: 150
+        vehicle: 30
+        "minecraft:hopper": 40
+        "minecraft:blast_furnace": 16
 
-  # 庄园升到「对应等级」时，由控制台执行「对应命令」（管理员 /gs admin upgrade-manor 触发）。
-  # 只执行升到的那一级配的命令（不累加更低等级）。命令以控制台身份执行，故 give/cmi/lp 等任意插件命令均可挂接。
-  # 占位符: %player%(庄主名) %uuid% %guild%(公会ID) %level%(新等级) %old_level%(旧等级) %slot%
-  upgrade-commands:
-    enabled: true       # 默认关；要用改 true 并按需配置下方 levels
-    levels:              # 键 = 升到的目标等级，值 = 该等级要执行的命令列表（不带前导 /）
-      2:
-        - "broadcast §a%player% §f的庄园升到了 §e2 §f级！"
-      3:
-        - "broadcast §a%player% §f的庄园升到了 §e3 §f级！"
-      4:
-        - "broadcast §a%player% §f的庄园升到了 §e4 §f级！"
-      5:
-        - "broadcast §a%player% §f的庄园升到了 §e5 §f级！"
-      6:
-        - "broadcast §a%player% §f的庄园升到了 §e6 §f级！"
-      7:
-        - "broadcast §a%player% §f的庄园升到了 §e7 §f级！"
-      8:
-        - "broadcast §a%player% §f的庄园升到了 §e8 §f级！"
-      9:
-        - "broadcast §a%player% §f的庄园升到了 §e9 §f级！"
-      10:
-        - "broadcast §a%player% §f的庄园升到了 §e10 §f级，进入中期庄园阶段！"
-      11:
-        - "broadcast §a%player% §f的庄园升到了 §e11 §f级！"
-      12:
-        - "broadcast §a%player% §f的庄园升到了 §e12 §f级！"
-      13:
-        - "broadcast §a%player% §f的庄园升到了 §e13 §f级！"
-      14:
-        - "broadcast §a%player% §f的庄园升到了 §e14 §f级！"
-      15:
-        - "broadcast §a%player% §f的庄园升到了 §e15 §f级！"
-      16:
-        - "broadcast §a%player% §f的庄园升到了 §e16 §f级！"
-      17:
-        - "broadcast §a%player% §f的庄园升到了 §e17 §f级！"
-      18:
-        - "broadcast §a%player% §f的庄园升到了 §e18 §f级！"
-      19:
-        - "broadcast §a%player% §f的庄园升到了 §e19 §f级！"
-      20:
-        - "broadcast §6%player% §f的庄园已升到 §e20 §f级，达成满级！"
-
-# ───────────────────────── 公会等级（营地容量 + 主城）─────────────────────────
 guild:
-  max-level: 5           # 公会最高等级；配置了 guild.levels 时，以显式时代表为准
+  max-level: 5
 
-  # 公会时代。
-  # member-cap = 当前时代人数上限；main-city-unlock-chunks = 主城已解锁 chunk 额度上限。
   levels:
     1:
       name: "蛮荒时代"
       member-cap: 20
       main-city-unlock-chunks: 9
+
     2:
       name: "农耕时代"
       member-cap: 40
       main-city-unlock-chunks: 16
+
     3:
       name: "蒸汽时代"
       member-cap: 60
       main-city-unlock-chunks: 25
+
     4:
       name: "电力时代"
       member-cap: 90
       main-city-unlock-chunks: 49
+
     5:
       name: "后工业时代"
       member-cap: 100
       main-city-unlock-chunks: 100
 
-  # 主城：全公会共享的中央广场，独占【中心一格】——整格都是主城领地；额度随【公会等级】、只有会长/副会长能解锁。
-  #
-  # ⚠ 重要：主城的【物理大小】恒等于中心一格 = manor.max-chunks（和满级庄园一样大），【配不出更大的主城】。
-  #   下面两个 *-unlock-chunks 只决定"会长能在这一格里【解锁建造多少格】"，不是城的边界，也不会让城变大变小：
-  #   · 超出额度的城地仍属主城，只是【未解锁】——受保护(外人/普通成员动不了)、保持自然原貌，会长有额度时再解锁(形状自由)。
-  #   · max-unlock-chunks 会自动夹到 ≤ manor.max-chunks（配大了只告警不崩服）。
-  #   想让主城真比成员大，需要改布局算法(中心格跨多格)，非本配置能调。
-  #   （旧键 initial-chunks / max-chunks 仍兼容读取，无需立刻改名。）
   main-city:
-    initial-unlock-chunks: 3   # 建会初始解锁额度边长 → 初始可解锁 3²=9 格（建会即整好这块）
-    max-unlock-chunks: 10      # 满级解锁额度边长 → 最多解锁 10²=100 格；自动夹到 ≤ manor.max-chunks
+    initial-unlock-chunks: 3
+    max-unlock-chunks: 10

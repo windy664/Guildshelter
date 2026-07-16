@@ -7,6 +7,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.windy.guildshelter.api.MapClaimStatus;
 import org.windy.guildshelter.adapter.bukkit.GuildWorldRegistry;
 import org.windy.guildshelter.domain.layout.Classification;
 import org.windy.guildshelter.domain.layout.LayoutCalculator;
@@ -42,9 +43,11 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
     // S→C
     private static final byte PLOTS = 0x01;
     private static final byte CLEAR = 0x02;
-    private static final byte RESULT = 0x20;
+    private static final byte CLAIM_RESULT = 0x20;
     // C→S
-    private static final byte CLAIM = 0x10;
+    private static final byte CLAIM_REQUEST = 0x10;
+    private static final byte ACTION_CLAIM = 0;
+    private static final int MAX_CLAIM_REQUEST_BYTES = 64;
 
     // kind（与 PLAN_XAERO.md §3 对齐）
     private static final byte KIND_CITY_UNLOCKED = 0;
@@ -215,21 +218,37 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
         if (!CHANNEL.equals(channel)) {
             return;
         }
+        if (message == null || message.length > MAX_CLAIM_REQUEST_BYTES) {
+            return;
+        }
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(message))) {
             byte type = in.readByte();
-            if (type != CLAIM) {
-                return; // v1 只处理 CLAIM
+            if (type != CLAIM_REQUEST) {
+                return;
             }
-            int chunkX = in.readInt();
-            int chunkZ = in.readInt();
-            handleClaim(player, chunkX, chunkZ);
+            byte action = in.readByte();
+            if (action != ACTION_CLAIM) {
+                return;
+            }
+            int left = in.readInt();
+            int top = in.readInt();
+            int right = in.readInt();
+            int bottom = in.readInt();
+            if (left > right || top > bottom) {
+                return;
+            }
+            if (left != right || top != bottom) {
+                sendResult(player, action, left, top, right, bottom, MapClaimStatus.NOT_CLAIMABLE);
+                return;
+            }
+            handleClaim(player, action, left, top);
         } catch (IOException ex) {
             logger.warning("[GuildShelter] 解析地图圈地请求失败: " + ex.getMessage());
         }
     }
 
     /** 裁决一次地图圈地点击：按 chunk 落区分流到庄园解锁 / 主城解锁，复用既有服务规则。 */
-    private void handleClaim(Player player, int worldChunkX, int worldChunkZ) {
+    private void handleClaim(Player player, byte action, int worldChunkX, int worldChunkZ) {
         GuildWorld gw = registry.get(player.getWorld().getName());
         if (gw == null) {
             return; // 不在公会世界
@@ -242,13 +261,13 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
 
         if (c.isPlot()) {
             GuildService.UnlockResult r = service.unlockChunk(gw.guild(), ref, worldChunkX, worldChunkZ);
-            sendResult(player, r == GuildService.UnlockResult.SUCCESS, "map.claim_" + r.name().toLowerCase());
+            sendResult(player, action, worldChunkX, worldChunkZ, worldChunkX, worldChunkZ, mapStatus(r));
             if (r == GuildService.UnlockResult.SUCCESS) {
                 refreshGuild(gw);
             }
         } else if (c.isMainCity()) {
             if (!service.isGuildAdmin(ref, gw.guild()) && !player.isOp()) {
-                sendResult(player, false, "map.claim_city_leader_only");
+                sendResult(player, action, worldChunkX, worldChunkZ, worldChunkX, worldChunkZ, MapClaimStatus.CITY_LEADER_ONLY);
                 return;
             }
             GuildWorld updated = service.unlockCityChunk(gw.guild(), worldChunkX, worldChunkZ);
@@ -256,26 +275,43 @@ public final class MapClaimChannel implements PluginMessageListener, Listener {
             if (ok) {
                 registry.register(updated);
             }
-            sendResult(player, ok, "map.claim_" + service.lastCityUnlockResult().name().toLowerCase());
+            sendResult(player, action, worldChunkX, worldChunkZ, worldChunkX, worldChunkZ, mapStatus(service.lastCityUnlockResult()));
             if (ok) {
                 refreshGuild(updated);
             }
         } else {
-            sendResult(player, false, "map.claim_not_claimable");
+            sendResult(player, action, worldChunkX, worldChunkZ, worldChunkX, worldChunkZ, MapClaimStatus.NOT_CLAIMABLE);
         }
     }
 
-    private void sendResult(Player player, boolean ok, String messageKey) {
-        // 服务端按当前语言解析成文本再下发，客户端 mod 直接渲染，无需镜像本插件消息表。
-        String text = org.windy.guildshelter.adapter.bukkit.Messages.get(messageKey);
+    private void sendResult(Player player, byte action, int left, int top, int right, int bottom, MapClaimStatus status) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(bos)) {
-            out.writeByte(RESULT);
-            out.writeByte(ok ? 1 : 0);
-            out.writeUTF(text);
+            int statusOrdinal = status.ordinal();
+            if (statusOrdinal > 255) {
+                throw new IOException("Map claim status ordinal is too large: " + statusOrdinal);
+            }
+            out.writeByte(CLAIM_RESULT);
+            out.writeByte(action);
+            out.writeInt(left);
+            out.writeInt(top);
+            out.writeInt(right);
+            out.writeInt(bottom);
+            out.writeByte(statusOrdinal);
             player.sendPluginMessage(plugin, CHANNEL, bos.toByteArray());
         } catch (IOException ex) {
             logger.warning("[GuildShelter] 发送圈地结果失败: " + ex.getMessage());
         }
+    }
+
+    private static MapClaimStatus mapStatus(GuildService.UnlockResult result) {
+        return switch (result) {
+            case SUCCESS -> MapClaimStatus.SUCCESS;
+            case NO_MANOR -> MapClaimStatus.NO_MANOR;
+            case NOT_YOUR_PLOT -> MapClaimStatus.NOT_YOUR_PLOT;
+            case ALREADY_UNLOCKED -> MapClaimStatus.ALREADY_UNLOCKED;
+            case NO_QUOTA -> MapClaimStatus.NO_QUOTA;
+            case NOT_ADJACENT -> MapClaimStatus.NOT_ADJACENT;
+        };
     }
 }

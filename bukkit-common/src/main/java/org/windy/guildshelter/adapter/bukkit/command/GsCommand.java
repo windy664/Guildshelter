@@ -1,4 +1,4 @@
-package org.windy.guildshelter.adapter.bukkit.command;
+﻿package org.windy.guildshelter.adapter.bukkit.command;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -102,7 +102,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             // 玩家行为
             "item-drop", "mob-place",
             // 交互组
-            "use", "container", "item-frame", "vehicle-use",
+            "use", "container", "item-frame", "vehicle-use", "fake-player",
             // 共享农场（会长可对主城开放：全体会内成员可种收农作物）
             "members-farm");
 
@@ -217,14 +217,478 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         }
         UiView next = switch (page) {
             case "info" -> Menus.controllerInfo(manor, gw, levels);
-            case "upgrade" -> Menus.controllerUpgrade(manor, gw, levels);
+            case "upgrade" -> controllerUpgradeView(manor, gw);
+            case "quick" -> Menus.controllerQuick(manor, gw);
+            case "limits" -> controllerLimitsView(player, manor, gw);
             case "care" -> Menus.controllerCare(manor, gw);
-            case "security" -> Menus.controllerSecurity(manor, gw);
-            case "activity" -> Menus.controllerActivity(manor, gw);
-            case "members" -> Menus.memberManager(manor);
+            case "maintenance" -> Menus.controllerMaintenance(manor, gw);
+            case "security" -> controllerSecurityView(manor, gw);
+            case "flags" -> controllerFlagsView(manor, gw);
+            case "activity" -> controllerActivityView(player, manor, gw);
+            case "activity_board" -> controllerActivityBoardView(manor, gw);
+            case "activity_rate" -> controllerActivityRateView(player, manor, gw);
+            case "members" -> controllerMembersView(manor, gw);
+            case "member_ops" -> controllerMemberOpsView(manor, gw);
+            case "member_list" -> Menus.memberManager(manor);
             default -> Menus.manorController(manor, gw, levels);
         };
         openUi(player, next);
+    }
+
+    private UiView controllerMembersView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        values.put("owner_name", nameOf(manor.owner().uuid().toString()));
+        values.put("owner_status", online(manor.owner()) ? "在线" : "离线");
+        putRoleSummary(values, "trusted", manor.coBuilders());
+        putRoleSummary(values, "member", manor.members());
+        putRoleSummary(values, "deny", manor.denied());
+        int totalCount = 1 + manor.coBuilders().size() + manor.members().size() + manor.denied().size();
+        int totalOnline = (online(manor.owner()) ? 1 : 0)
+                + onlineCount(manor.coBuilders())
+                + onlineCount(manor.members())
+                + onlineCount(manor.denied());
+        values.put("total_count", totalCount);
+        values.put("total_online", totalOnline);
+        return Menus.controllerMembers(manor, gw, values);
+    }
+
+
+    private UiView controllerMemberOpsView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        values.put("owner_name", nameOf(manor.owner().uuid().toString()));
+        values.put("owner_status", online(manor.owner()) ? "在线" : "离线");
+        putRoleSummary(values, "trusted", manor.coBuilders());
+        putRoleSummary(values, "member", manor.members());
+        putRoleSummary(values, "deny", manor.denied());
+        int totalCount = 1 + manor.coBuilders().size() + manor.members().size() + manor.denied().size();
+        int totalOnline = (online(manor.owner()) ? 1 : 0)
+                + onlineCount(manor.coBuilders())
+                + onlineCount(manor.members())
+                + onlineCount(manor.denied());
+        values.put("total_count", totalCount);
+        values.put("total_online", totalOnline);
+        return Menus.controllerMemberOps(manor, gw, values);
+    }    private UiView controllerActivityView(Player player, Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        List<ManorRepository.CommentEntry> comments = manors.getComments(manor.guild(), manor.slot(), 5);
+        values.put("flower_today", manors.getTodayFlowerCount(manor.guild(), manor.slot()));
+        values.put("popularity", formatOne(manors.getPopularity(manor.guild(), manor.slot())));
+        values.put("rating_avg", formatOne(manors.getAverageRating(manor.guild(), manor.slot())));
+        values.put("rating_count", manors.getRatingCount(manor.guild(), manor.slot()));
+        values.put("my_rating", player == null ? 0 : manors.getRating(manor.guild(), manor.slot(), PlayerRef.of(player.getUniqueId())));
+        values.put("comment_count", comments.size());
+        fillCommentPreviews(values, comments, "comment_preview");
+        values.put("comment_hint", "使用 /gs comment <留言> 留下文字反馈");
+        values.put("board_hint", "点击留言墙查看完整列表");
+        values.put("inbox_hint", "收件箱会显示你拥有的庄园收到的留言");
+        return Menus.controllerActivity(manor, gw, values);
+    }
+
+    private UiView controllerActivityBoardView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        List<ManorRepository.CommentEntry> comments = manors.getComments(manor.guild(), manor.slot(), 5);
+        values.put("comment_count", comments.size());
+        fillCommentPreviews(values, comments, "comment_preview");
+        values.put("board_hint", "留言按时间倒序显示，最多展示最近 5 条");
+        return Menus.controllerActivityBoard(manor, gw, values);
+    }
+
+    private UiView controllerActivityRateView(Player player, Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        values.put("rating_avg", formatOne(manors.getAverageRating(manor.guild(), manor.slot())));
+        values.put("rating_count", manors.getRatingCount(manor.guild(), manor.slot()));
+        values.put("my_rating", player == null ? 0 : manors.getRating(manor.guild(), manor.slot(), PlayerRef.of(player.getUniqueId())));
+        values.put("rate_hint", "点击数字即可保存评分");
+        return Menus.controllerActivityRate(manor, gw, values);
+    }
+
+    private UiView controllerLimitsView(Player player, Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        World world = Bukkit.getWorld(gw.worldName());
+        ManorEntityCensus.Census counts = world != null && census != null
+                ? census.countAtCached(world, manor)
+                : ManorEntityCensus.Census.EMPTY;
+
+        putLimit(values, "drops", counts.droppedItems(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.DROPS));
+        putLimit(values, "tiles", counts.tileEntities(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.TILES));
+        putLimit(values, "animal", counts.animals(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.ANIMAL));
+        putLimit(values, "hostile", counts.hostiles(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.HOSTILE));
+        putLimit(values, "mob", counts.livingTotal(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.MOB));
+        putLimit(values, "vehicle", counts.vehicles(), cap(manor, org.windy.guildshelter.domain.rule.OptimizationLimit.VEHICLE));
+
+        List<String> machines = census == null || census.quotas() == null
+                ? List.of()
+                : census.quotas().machineIds().stream().sorted().toList();
+        values.put("machine_count", machines.size());
+        values.put("machine_summary", machineSummary(machines, counts));
+        for (int i = 0; i < 3; i++) {
+            String prefix = "machine_" + (i + 1);
+            if (i < machines.size()) {
+                String id = machines.get(i);
+                int cap = census.quotas().effectiveCap(manor, new org.windy.guildshelter.domain.rule.quota.MachineKey(id));
+                int used = counts.machineCount(id);
+                values.put(prefix + "_name", BlockDisplayNames.display(id));
+                putLimit(values, prefix, used, cap);
+            } else {
+                values.put(prefix + "_name", "未配置");
+                values.put(prefix + "_used", "-");
+                values.put(prefix + "_cap", "-");
+                values.put(prefix + "_remain", "-");
+                values.put(prefix + "_status", "未配置");
+            }
+        }
+        values.put("limits_world_status", world == null ? "营地世界未加载，当前计数显示为 0" : "统计最近 3 秒缓存内的已加载区块");
+        return Menus.controllerLimits(manor, gw, levels, values);
+    }
+
+    private UiView controllerUpgradeView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        boolean maxed = manor.level() >= levels.manorMaxLevel();
+        int targetLevel = Math.min(levels.manorMaxLevel(), manor.level() + 1);
+        int currentQuota = manor.quotaCap(gw.layout(), levels);
+        int nextQuota = maxed ? currentQuota : levels.manorQuotaCap(gw.layout(), targetLevel);
+        values.put("upgrade_status", maxed ? "已满级" : "可升级");
+        values.put("quota_delta", maxed ? "0" : signed(nextQuota - currentQuota));
+
+        UpgradeCost cost = new UpgradeCost(0.0, List.of());
+        if (!maxed) {
+            try {
+                cost = loadUpgradeCost(targetLevel);
+            } catch (IllegalArgumentException ignored) {
+                values.put("upgrade_status", "配置错误");
+            }
+        }
+        values.put("upgrade_money", moneyText(cost.money()));
+        values.put("upgrade_items_count", cost.items().size());
+        for (int i = 0; i < 5; i++) {
+            String key = "upgrade_item_" + (i + 1);
+            if (i < cost.items().size()) {
+                ItemCost item = cost.items().get(i);
+                values.put(key, BlockDisplayNames.display(item.id()) + " x" + item.amount());
+            } else {
+                values.put(key, "-");
+            }
+        }
+        values.put("upgrade_items_more", cost.items().size() > 5 ? "+" + (cost.items().size() - 5) + " 项" : "无");
+
+        Manor nextManor = manor.withLevel(targetLevel);
+        putUpgradeDelta(values, "tiles", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.TILES);
+        putUpgradeDelta(values, "drops", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.DROPS);
+        putUpgradeDelta(values, "animal", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.ANIMAL);
+        putUpgradeDelta(values, "hostile", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.HOSTILE);
+        putUpgradeDelta(values, "mob", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.MOB);
+        putUpgradeDelta(values, "vehicle", manor, nextManor, org.windy.guildshelter.domain.rule.OptimizationLimit.VEHICLE);
+        return Menus.controllerUpgrade(manor, gw, levels, values);
+    }
+
+    private UiView controllerSecurityView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        boolean open = plotOpen(manor);
+        boolean denyEntry = Flag.DENY_ENTRY.resolveBool(manor.flags());
+        values.put("visitor_status", visitorStatus(manor));
+        values.put("visitor_action_hint", open ? "如需结束参观，点击关闭访客" : "点击可开放 60 分钟");
+        values.put("entry_policy", open ? "临时开放中" : (denyEntry ? "谢客，非成员禁止进入" : "允许访客进入"));
+        values.put("exit_policy", Flag.DENY_EXIT.resolveBool(manor.flags()) ? "限制非成员离开" : "允许自由离开");
+        values.put("price_text", moneyText(Flag.PRICE.resolveDouble(manor.flags())));
+        values.put("deny_count", manor.denied().size());
+        values.put("trusted_count", manor.coBuilders().size());
+        values.put("member_count", manor.members().size());
+        values.put("pvp_status", onOff(Flag.PVP.resolveBool(manor.flags()), "允许", "禁止"));
+        values.put("use_status", onOff(Flag.USE.resolveBool(manor.flags()), "允许", "禁止"));
+        values.put("container_status", onOff(Flag.CONTAINER.resolveBool(manor.flags()), "允许", "禁止"));
+        values.put("vehicle_status", onOff(Flag.VEHICLE_USE.resolveBool(manor.flags()), "允许", "禁止"));
+        values.put("greeting_status", blankFlag(Flag.GREETING.resolveString(manor.flags())));
+        values.put("farewell_status", blankFlag(Flag.FAREWELL.resolveString(manor.flags())));
+        values.put("titles_status", onOff(Flag.TITLES.resolveBool(manor.flags()), "标题", "聊天"));
+        values.put("notify_status", "进入 " + onOff(Flag.NOTIFY_ENTER.resolveBool(manor.flags()), "开", "关")
+                + " / 离开 " + onOff(Flag.NOTIFY_LEAVE.resolveBool(manor.flags()), "开", "关"));
+        values.put("flag_custom_count", manor.flags().size());
+        values.put("audit_status", auditLog != null && auditLog.isEnabled() ? "已启用" : "未启用");
+        return Menus.controllerSecurity(manor, gw, values);
+    }
+
+    private UiView controllerFlagsView(Manor manor, GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        putFlag(values, "deny_entry", manor, Flag.DENY_ENTRY);
+        putFlag(values, "deny_exit", manor, Flag.DENY_EXIT);
+        putFlag(values, "pvp", manor, Flag.PVP);
+        putFlag(values, "pve", manor, Flag.PVE);
+        putFlag(values, "invincible", manor, Flag.INVINCIBLE);
+        putFlag(values, "use", manor, Flag.USE);
+        putFlag(values, "container", manor, Flag.CONTAINER);
+        putFlag(values, "item_frame", manor, Flag.ITEM_FRAME);
+        putFlag(values, "vehicle", manor, Flag.VEHICLE_USE);
+        putFlag(values, "titles", manor, Flag.TITLES);
+        putFlag(values, "notify_enter", manor, Flag.NOTIFY_ENTER);
+        putFlag(values, "notify_leave", manor, Flag.NOTIFY_LEAVE);
+        values.put("flag_custom_count", manor.flags().size());
+        values.put("more_flags_text", "完整列表包含环境、农场和数值 Flag");
+        return Menus.controllerFlags(manor, gw, values);
+    }
+
+    private void putUpgradeDelta(Map<String, Object> values, String key, Manor current, Manor next,
+                                 org.windy.guildshelter.domain.rule.quota.ManorQuotaKey quotaKey) {
+        int before = cap(current, quotaKey);
+        int after = cap(next, quotaKey);
+        values.put(key + "_next_cap", formatCap(after));
+        values.put(key + "_delta", deltaText(before, after));
+    }
+
+    private static String moneyText(double money) {
+        if (money <= 0) {
+            return "免费";
+        }
+        if (money == Math.rint(money)) {
+            return String.valueOf((long) money);
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", money);
+    }
+
+    private static String deltaText(int before, int after) {
+        if (before < 0 && after < 0) {
+            return "不限";
+        }
+        if (before < 0) {
+            return "不限 -> " + after;
+        }
+        if (after < 0) {
+            return before + " -> 不限";
+        }
+        return signed(after - before);
+    }
+
+    private static String signed(int value) {
+        return value > 0 ? "+" + value : String.valueOf(value);
+    }
+
+    private static void putFlag(Map<String, Object> values, String key, Manor manor, Flag flag) {
+        boolean enabled = flag.resolveBool(manor.flags());
+        values.put(key + "_status", enabled ? "开启" : "关闭");
+        values.put(key + "_next", enabled ? "点击关闭" : "点击开启");
+    }
+
+    private void toggleBooleanFlag(UiViewer viewer, UiView view, Flag flag) {
+        Player player = Bukkit.getPlayer(viewer.id());
+        if (player == null) return;
+        Manor manor = contextManor(view, player);
+        if (manor == null) return;
+        if (flag.type() != FlagType.BOOLEAN) {
+            player.sendMessage(Messages.get("error.invalid_value"));
+            return;
+        }
+        if (!canSetFlag(player, manor, flag)) {
+            player.sendMessage(Messages.get("error.flag_set_perm", Permissions.flagSet(flag.id())));
+            return;
+        }
+        Map<String, String> flags = new HashMap<>(manor.flags());
+        boolean next = !flag.resolveBool(flags);
+        flags.put(flag.id(), Boolean.toString(next));
+        Manor updated = manor.withFlags(flags);
+        manors.save(updated);
+        player.sendMessage(Messages.get("success.flag_set", flag.id(), Boolean.toString(next), updated.slot()));
+        GuildWorld gw = contextGuildWorld(view, updated);
+        if (gw != null) {
+            UiView refreshed = "flag_editor".equals(view.id())
+                    ? Menus.flagEditor(updated, view.page())
+                    : controllerFlagsView(updated, gw);
+            openUi(player, refreshed);
+        }
+    }
+
+    private boolean canSetFlag(Player player, Manor manor, Flag flag) {
+        PlayerRef ref = PlayerRef.of(player.getUniqueId());
+        boolean isOwner = manor.owner().equals(ref);
+        boolean isTrusted = manor.coBuilders().contains(ref);
+        return isOwner
+                || (isTrusted && TRUSTED_FLAG_SET.contains(flag.id()))
+                || player.hasPermission(Permissions.flagSet(flag.id()))
+                || Permissions.hasAdminPerm(player, Permissions.ADMIN_FLAG_OTHER);
+    }
+
+    private boolean plotOpen(Manor manor) {
+        String key = manor.guild().value() + ":" + manor.slot();
+        Long expireAt = openPlots.get(key);
+        if (expireAt == null) {
+            return false;
+        }
+        if (expireAt == 0) {
+            return true;
+        }
+        if (System.currentTimeMillis() >= expireAt) {
+            openPlots.remove(key);
+            return false;
+        }
+        return true;
+    }
+
+    private String visitorStatus(Manor manor) {
+        String key = manor.guild().value() + ":" + manor.slot();
+        Long expireAt = openPlots.get(key);
+        if (expireAt == null) {
+            return "未开放";
+        }
+        if (expireAt == 0) {
+            return "永久开放";
+        }
+        long remaining = expireAt - System.currentTimeMillis();
+        if (remaining <= 0) {
+            openPlots.remove(key);
+            return "未开放";
+        }
+        return "开放中，剩余 " + minutesText(remaining);
+    }
+
+    private static String minutesText(long millis) {
+        long minutes = Math.max(1, (long) Math.ceil(millis / 60_000.0));
+        if (minutes < 60) {
+            return minutes + " 分钟";
+        }
+        long hours = minutes / 60;
+        long rest = minutes % 60;
+        return rest == 0 ? hours + " 小时" : hours + " 小时 " + rest + " 分钟";
+    }
+
+    private static String onOff(boolean enabled, String onText, String offText) {
+        return enabled ? onText : offText;
+    }
+
+    private static String blankFlag(String value) {
+        return value == null || value.isBlank() ? "未设置" : "已设置";
+    }
+
+    private static String formatOne(double value) {
+        return String.format(java.util.Locale.ROOT, "%.1f", value);
+    }
+
+    private static void fillCommentPreviews(Map<String, Object> values, List<ManorRepository.CommentEntry> comments, String prefix) {
+        for (int i = 0; i < 5; i++) {
+            String key = prefix + "_" + (i + 1);
+            if (i < comments.size()) {
+                values.put(key, formatComment(comments.get(i)));
+            } else {
+                values.put(key, "无");
+            }
+        }
+    }
+
+    private static String formatComment(ManorRepository.CommentEntry entry) {
+        String author = Bukkit.getOfflinePlayer(entry.author().uuid()).getName();
+        if (author == null || author.isBlank()) {
+            author = entry.author().uuid().toString().substring(0, 8);
+        }
+        String time = new java.text.SimpleDateFormat("MM-dd HH:mm").format(new java.util.Date(entry.timestamp()));
+        return time + " " + author + ": " + clip(entry.message(), 22);
+    }
+
+    private static String clip(String text, int max) {
+        if (text == null) {
+            return "";
+        }
+        String value = text.replace('\n', ' ').trim();
+        if (value.length() <= max) {
+            return value;
+        }
+        return value.substring(0, Math.max(0, max - 1)) + "…";
+    }
+
+    private void rateManor(Player player, Manor targetManor, int score) {
+        if (score < 1 || score > 10) {
+            player.sendMessage(Messages.get("error.score_range"));
+            return;
+        }
+        PlayerRef ref = PlayerRef.of(player.getUniqueId());
+        if (targetManor.owner().equals(ref)) {
+            player.sendMessage(Messages.get("error.cannot_rate_self"));
+            return;
+        }
+        manors.rate(targetManor.guild(), targetManor.slot(), ref, score);
+        double avg = manors.getAverageRating(targetManor.guild(), targetManor.slot());
+        int count = manors.getRatingCount(targetManor.guild(), targetManor.slot());
+        player.sendMessage(Messages.get("success.rated", targetManor.slot(), score, String.format(java.util.Locale.ROOT, "%.1f", avg), count));
+    }
+
+    private static boolean online(PlayerRef ref) {
+        return Bukkit.getPlayer(ref.uuid()) != null;
+    }
+
+    private static int onlineCount(Set<PlayerRef> refs) {
+        int count = 0;
+        for (PlayerRef ref : refs) {
+            if (online(ref)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private static void putRoleSummary(Map<String, Object> values, String key, Set<PlayerRef> refs) {
+        values.put(key + "_count", refs.size());
+        values.put(key + "_online", onlineCount(refs));
+        values.put(key + "_preview", previewRefs(refs, 3));
+    }
+
+    private static String previewRefs(Set<PlayerRef> refs, int limit) {
+        if (refs.isEmpty()) {
+            return "无";
+        }
+        List<String> names = new ArrayList<>();
+        int extra = 0;
+        for (PlayerRef ref : refs) {
+            if (names.size() < limit) {
+                names.add(nameOf(ref.uuid().toString()));
+            } else {
+                extra++;
+            }
+        }
+        if (extra > 0) {
+            names.add("+" + extra);
+        }
+        return String.join(" / ", names);
+    }
+
+    private int cap(Manor manor, org.windy.guildshelter.domain.rule.quota.ManorQuotaKey key) {
+        if (census == null || census.quotas() == null) {
+            return -1;
+        }
+        return census.quotas().effectiveCap(manor, key);
+    }
+
+    private static void putLimit(Map<String, Object> values, String key, int used, int cap) {
+        values.put(key + "_used", used);
+        values.put(key + "_cap", formatCap(cap));
+        values.put(key + "_remain", cap < 0 ? "不限" : Math.max(0, cap - used));
+        values.put(key + "_status", status(used, cap));
+    }
+
+    private static String formatCap(int cap) {
+        return cap < 0 ? "不限" : String.valueOf(cap);
+    }
+
+    private static String status(int used, int cap) {
+        if (cap < 0) {
+            return "不限";
+        }
+        if (used > cap) {
+            return "超限";
+        }
+        if (cap > 0 && used >= Math.ceil(cap * 0.85)) {
+            return "接近上限";
+        }
+        return "正常";
+    }
+
+    private static String machineSummary(List<String> machines, ManorEntityCensus.Census counts) {
+        if (machines.isEmpty()) {
+            return "未配置机器配额";
+        }
+        List<String> parts = new ArrayList<>();
+        for (String id : machines.stream().limit(3).toList()) {
+            parts.add(BlockDisplayNames.display(id) + " " + counts.machineCount(id));
+        }
+        if (machines.size() > 3) {
+            parts.add("+" + (machines.size() - 3));
+        }
+        return String.join(" / ", parts);
     }
 
     private Manor contextManor(UiView view, Player player) {
@@ -312,15 +776,68 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             if (backend != null) backend.close(viewer);
         });
         router.onAction("menu.controller", (viewer, view) -> openController(viewer));
+        router.onAction("menu.camp", (viewer, view) -> openCampPage(viewer, view, "main"));
+        router.onAction("menu.camp.spawn", (viewer, view) -> openCampPage(viewer, view, "spawn"));
+        router.onAction("menu.camp.city", (viewer, view) -> openCampPage(viewer, view, "city"));
+        router.onAction("menu.camp.social", (viewer, view) -> openCampPage(viewer, view, "social"));
         router.onAction("menu.controller.info", (viewer, view) -> openControllerPage(viewer, view, "info"));
         router.onAction("menu.controller.upgrade", (viewer, view) -> openControllerPage(viewer, view, "upgrade"));
+        router.onAction("menu.controller.quick", (viewer, view) -> openControllerPage(viewer, view, "quick"));
         router.onAction("menu.controller.care", (viewer, view) -> openControllerPage(viewer, view, "care"));
+        router.onAction("menu.controller.maintenance", (viewer, view) -> openControllerPage(viewer, view, "maintenance"));
+        router.onAction("menu.controller.limits", (viewer, view) -> openControllerPage(viewer, view, "limits"));
         router.onAction("menu.controller.security", (viewer, view) -> openControllerPage(viewer, view, "security"));
+        router.onAction("menu.controller.flags", (viewer, view) -> openControllerPage(viewer, view, "flags"));
+        router.onAction("menu.controller.members", (viewer, view) -> openControllerPage(viewer, view, "members"));
+        router.onAction("menu.controller.members.ops", (viewer, view) -> openControllerPage(viewer, view, "member_ops"));
         router.onAction("menu.controller.activity", (viewer, view) -> openControllerPage(viewer, view, "activity"));
-        router.onAction("menu.members", (viewer, view) -> openControllerPage(viewer, view, "members"));
+        router.onAction("menu.controller.activity.board", (viewer, view) -> openControllerPage(viewer, view, "activity_board"));
+        router.onAction("menu.controller.activity.rate", (viewer, view) -> openControllerPage(viewer, view, "activity_rate"));
+        router.onAction("menu.controller.activity.inbox", (viewer, view) -> { });
+        router.onAction("menu.controller.flags.full", (viewer, view) -> {
+            Player player = Bukkit.getPlayer(viewer.id());
+            if (player == null) return;
+            Manor manor = contextManor(view, player);
+            if (manor == null) return;
+            openUi(player, Menus.flagEditor(manor, 0));
+        });
+        for (int page = 0; page < 10; page++) {
+            final int targetPage = page;
+            router.onAction("menu.flags.page." + targetPage, (viewer, view) -> {
+                Player player = Bukkit.getPlayer(viewer.id());
+                if (player == null) return;
+                Manor manor = contextManor(view, player);
+                if (manor == null) return;
+                openUi(player, Menus.flagEditor(manor, targetPage));
+            });
+        }
+        router.onAction("menu.members", (viewer, view) -> {
+            Player player = Bukkit.getPlayer(viewer.id());
+            if (player == null) return;
+            Manor manor = contextManor(view, player);
+            if (manor == null) return;
+            openUi(player, Menus.memberManager(manor));
+        });
         router.onAction("menu.info", (viewer, view) -> openControllerPage(viewer, view, "info"));
-        router.onAction("menu.members.", (viewer, view) -> openControllerPage(viewer, view, "members"));
         router.onAction("upgrade.pending", (viewer, view) -> runPlayerCommand(viewer, "upgrade"));
+        for (int score = 1; score <= 10; score++) {
+            final int targetScore = score;
+            router.onAction("menu.controller.activity.rate." + targetScore, (viewer, view) -> {
+                Player player = Bukkit.getPlayer(viewer.id());
+                if (player == null) return;
+                Manor manor = contextManor(view, player);
+                if (manor == null) return;
+                GuildWorld gw = contextGuildWorld(view, manor);
+                if (gw == null) return;
+                rateManor(player, manor, targetScore);
+                openUi(player, controllerActivityView(player, manor, gw));
+            });
+        }
+        for (Flag flag : Flag.values()) {
+            if (flag.type() == FlagType.BOOLEAN) {
+                router.onAction("flag.toggle." + flag.id(), (viewer, view) -> toggleBooleanFlag(viewer, view, flag));
+            }
+        }
 
         Set<String> legacyInfoOnlyActions = Set.of(
                 "command.info",
@@ -343,6 +860,13 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
                 Map.entry("command.upgrade", "upgrade"),
                 Map.entry("command.home", "home"),
                 Map.entry("command.sethome", "sethome"),
+                Map.entry("command.spawn", "spawn"),
+                Map.entry("command.setspawn.member", "setspawn member"),
+                Map.entry("command.setspawn.visitor", "setspawn visitor"),
+                Map.entry("command.cityunlock", "cityunlock"),
+                Map.entry("command.cityplot.list", "cityplot list"),
+                Map.entry("command.holo.list", "holo list"),
+                Map.entry("command.log", "log"),
                 Map.entry("command.unlock", "unlock"),
                 Map.entry("command.clear", "clear"),
                 Map.entry("command.move", "move"),
@@ -483,7 +1007,8 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             case "log" -> { logCmd(sender, args); return true; }
             case "cityplot" -> { cityPlot(sender, args); return true; }
             case "createcamp" -> { createCamp(sender, args); return true; }
-            case "controller", "gui" -> { controller(sender); return true; }
+            case "controller" -> { controller(sender); return true; }
+            case "gui" -> { gui(sender, args); return true; }
             case "admin" -> { /* 落到下面的管理分支 */ }
             default -> {
                 sender.sendMessage(Messages.get("usage.player_commands"));
@@ -532,6 +1057,79 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
             return;
         }
         openController(player);
+    }
+
+    private void gui(CommandSender sender, String[] args) {
+        if (args.length >= 2 && args[1].equalsIgnoreCase("camp")) {
+            camp(sender);
+            return;
+        }
+        controller(sender);
+    }
+
+    private void camp(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(Messages.get("error.player_only"));
+            return;
+        }
+        GuildWorld gw = currentCampWorld(player);
+        if (gw == null) {
+            sender.sendMessage(Messages.get("error.not_in_guild_world"));
+            return;
+        }
+        openCamp(player, gw, "main");
+    }
+
+    private GuildWorld currentCampWorld(Player player) {
+        GuildWorld current = registry.get(player.getWorld().getName());
+        if (current != null) {
+            return current;
+        }
+        Manor manor = currentOwnManor(player).orElse(null);
+        return manor == null ? null : guilds.find(manor.guild()).orElse(null);
+    }
+
+    private Map<String, Object> campValues(GuildWorld gw) {
+        Map<String, Object> values = new HashMap<>();
+        int cityQuota = gw.cityQuotaCap(levels);
+        int cityUnlocked = gw.cityUnlockedChunks().size();
+        values.put("city_quota", cityQuota);
+        values.put("city_unlocked", cityUnlocked);
+        values.put("city_remaining", Math.max(0, cityQuota - cityUnlocked));
+        values.put("member_spawn_status", campSpawn != null && campSpawn.get(gw.guild(), org.windy.guildshelter.domain.port.CampSpawnStore.Type.MEMBER).isPresent() ? "已设置" : "未设置");
+        values.put("visitor_spawn_status", campSpawn != null && campSpawn.get(gw.guild(), org.windy.guildshelter.domain.port.CampSpawnStore.Type.VISITOR).isPresent() ? "已设置" : "未设置");
+        values.put("cityplot_status", cityPlotsEnabled && cityPlotCache != null ? "已启用" : "未启用");
+        values.put("cityplot_count", cityPlotsEnabled && cityPlotCache != null ? cityPlotCache.list(gw.guild()).size() : 0);
+        values.put("cityplot_limit", cityPlotMaxPerGuild);
+        values.put("holo_status", holoEnabled && holoStore != null && holoBackend != null && holoBackend.available() ? "已启用" : "未启用");
+        values.put("holo_count", holoStore != null ? holoStore.list(gw.guild()).size() : 0);
+        values.put("holo_limit", holoMaxPerGuild);
+        values.put("audit_status", auditLog != null && auditLog.isEnabled() ? "已启用" : "未启用");
+        values.put("greeting_status", cityFlagCache != null && cityFlagCache.flags(gw.guild()).containsKey(org.windy.guildshelter.adapter.bukkit.listener.TerritoryGreetingListener.KEY_GREETING) ? "已设置" : "未设置");
+        values.put("farewell_status", cityFlagCache != null && cityFlagCache.flags(gw.guild()).containsKey(org.windy.guildshelter.adapter.bukkit.listener.TerritoryGreetingListener.KEY_FAREWELL) ? "已设置" : "未设置");
+        return values;
+    }
+
+    private void openCamp(Player player, GuildWorld gw, String page) {
+        Map<String, Object> values = campValues(gw);
+        UiView next = switch (page) {
+            case "spawn" -> Menus.campSpawn(gw, levels, values);
+            case "city" -> Menus.campCity(gw, levels, values);
+            case "social" -> Menus.campSocial(gw, levels, values);
+            default -> Menus.campManager(gw, levels, values);
+        };
+        openUi(player, next);
+    }
+
+    private void openCampPage(UiViewer viewer, UiView source, String page) {
+        Player player = Bukkit.getPlayer(viewer.id());
+        if (player == null) return;
+        GuildWorld gw = source.context().get("guildWorld") instanceof GuildWorld g ? g : currentCampWorld(player);
+        if (gw == null) {
+            player.sendMessage(Messages.get("error.not_in_guild_world"));
+            return;
+        }
+        openCamp(player, gw, page);
     }
 
     /** /gs home：传送到自己庄园（优先用 sethome 坐标，否则实占中心）。 */
@@ -1241,7 +1839,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
     private UpgradeCost loadUpgradeCost(int targetLevel) {
         File file = new File(plugin.getDataFolder(), "levels.yml");
         YamlConfiguration cfg = YamlConfiguration.loadConfiguration(file);
-        String path = "manor.upgrade-costs.levels." + targetLevel;
+        String path = "manor.levels." + targetLevel + ".upgrade";
         ConfigurationSection section = cfg.getConfigurationSection(path);
         if (section == null) {
             return new UpgradeCost(0.0, List.of());
@@ -1855,7 +2453,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
                 for (Flag f : Flag.values()) {
                     String cur = manor.flags().get(f.id());
                     String shown = cur != null ? "§f" + cur : "§8" + f.defaultValue() + "(默认)";
-                    sender.sendMessage(Messages.get("info.flag_entry", f.id(), shown, f.description()));
+                    sender.sendMessage(Messages.get("info.flag_entry", f.id(), shown, Messages.get(f.description())));
                 }
             }
         }
@@ -1934,7 +2532,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
                     }
                     String cur = cf.get(f.id());
                     String shown = cur != null ? "§f" + cur : "§8" + f.defaultValue() + "(默认)";
-                    player.sendMessage(Messages.get("info.flag_entry", f.id(), shown, f.description()));
+                    player.sendMessage(Messages.get("info.flag_entry", f.id(), shown, Messages.get(f.description())));
                 }
             }
         }
@@ -2864,6 +3462,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
         org.windy.guildshelter.GuildShelterPlugin plugin = org.windy.guildshelter.GuildShelterPlugin.get();
         if (plugin != null) {
             plugin.reloadConfig();
+            Messages.load(plugin.getConfig().getString("language", "zh_CN"), plugin.getDataFolder());
             sender.sendMessage(Messages.get("success.reload"));
         } else {
             sender.sendMessage(Messages.get("error.plugin_unavailable"));
@@ -4457,6 +5056,7 @@ public final class GsCommand implements CommandExecutor, TabCompleter {
                 case "greeting", "farewell" -> { out.addAll(java.util.List.of("set", "clear")); }
                 case "cityplot" -> { out.addAll(java.util.List.of("define", "assign", "unassign", "remove", "list")); }
                 case "createcamp" -> { out.addAll(java.util.List.of("NONE", "CLEAR_VEGETATION", "FLATTEN", "VOID", "FLAT")); }
+                case "gui" -> { out.addAll(java.util.List.of("controller", "camp")); }
                 case "top" -> {
                     for (GuildWorld gw : guilds.findAll()) out.add(gw.guild().value());
                     out.addAll(java.util.List.of("rating", "level", "members", "entities", "visits"));

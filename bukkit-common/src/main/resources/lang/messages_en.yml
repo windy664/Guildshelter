@@ -234,11 +234,6 @@ info:
   blocked_cmds_line: "§7Blocked cmds: §c/%s"
   keep_line: "§7Keep on leave: §aYes"
   list_entry: "§7- §f%s §7Lv%s Members %s/%s §8(/gs visit %s)"
-  near_entry: "§7- §f%s §7Owner: §f%s §7Distance: §e%s blocks"
-  top_entry: "§e%s. §f%s §7Owner: §f%s §7%s: §e%s"
-  inbox_entry: "§7[%s] §f%s §7→ Plot#%s: §f%s"
-  template_entry: "§7- §f%s §7(%s flags)"
-  sub_entry: "§7- §f%s §7(%sx%s) §7flags: %s"
   guild_list_header: "§6==== %sGuild Camps (%s) ===="
   guild_list_entry: "§7- §f%s §7Lv%s Members %s/%s §8(/gs visit %s)"
   near_header: "§6==== Nearby Plots ===="
@@ -484,3 +479,7 @@ audit:
     manor_claim: "Claim manor"
     manor_upgrade: "Manor upgrade"
     chunk_unlock: "Unlock chunk"
+
+flag:
+  fake-player:
+    description: "Allow NeoForge fake-player automation interactions in this territory"

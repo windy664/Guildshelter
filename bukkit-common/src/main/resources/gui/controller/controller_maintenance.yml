@@ -1,0 +1,140 @@
+title: "&0庄园控制器 - 维护与迁移"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: CRAFTING_TABLE
+    name: "&e维护与迁移"
+    lore:
+      - "&7庄园: &f#{slot} &8| &7公会: &f{guild}"
+      - "&7等级: &fLv{level}/{max_level}"
+      - ""
+      - "&8这里整理会改变结构、位置或展示文本的真实功能。"
+      - "&8需要参数的项目只展示用法，不执行空命令。"
+    action: ""
+
+  clear:
+    index: 19
+    material: IRON_SHOVEL
+    name: "&a清理地表"
+    lore:
+      - "&8清理当前庄园地表。"
+      - "&7用法: &f/gs clear"
+      - "&7命令层会要求二次确认。"
+      - ""
+      - "&e点击执行清理流程"
+    action: "command.clear"
+
+  template:
+    index: 20
+    material: WRITABLE_BOOK
+    name: "&a建筑模板"
+    lore:
+      - "&8保存、应用和管理庄园建筑方案。"
+      - "&7查看: &f/gs template list"
+      - "&7创建: &f/gs template create <名称>"
+      - "&7应用: &f/gs template apply <名称>"
+      - "&7删除: &f/gs template delete <名称>"
+      - ""
+      - "&8名称需要聊天输入。"
+    action: ""
+
+  schematic:
+    index: 21
+    material: STRUCTURE_BLOCK
+    name: "&a结构文件"
+    lore:
+      - "&8对接 schematic 存储。"
+      - "&7列出文件: &f/gs template list-schematics"
+      - "&7保存: &f/gs template save <名称>"
+      - "&7粘贴: &f/gs template paste <名称>"
+      - ""
+      - "&8需要已有 WorldEdit/FAWE 存储支持。"
+    action: ""
+
+  sub:
+    index: 22
+    material: MAP
+    name: "&b子领地"
+    lore:
+      - "&8在庄园内划分小区域并设置 Flag。"
+      - "&7创建: &f/gs sub create <名称>"
+      - "&7列表: &f/gs sub list"
+      - "&7删除: &f/gs sub delete <名称>"
+      - "&7Flag: &f/gs sub setflag <名称> <flag> <值>"
+    action: ""
+
+  move:
+    index: 23
+    material: MINECART
+    name: "&e搬家"
+    lore:
+      - "&8迁移庄园到另一个公会。"
+      - "&7用法: &f/gs move <公会名>"
+      - "&7会检查费用、冷却、目标容量和迁移风险。"
+      - "&7命令层会要求确认。"
+    action: ""
+
+  swap:
+    index: 24
+    material: ENDER_PEARL
+    name: "&e交换庄园"
+    lore:
+      - "&8与另一名玩家互换庄园 slot。"
+      - "&7用法: &f/gs swap <玩家>"
+      - "&7多庄园时以脚下庄园为当前目标。"
+      - "&7命令层会要求确认。"
+    action: ""
+
+  merge:
+    index: 29
+    material: ANVIL
+    name: "&6合并庄园"
+    lore:
+      - "&8把相邻庄园合并到当前庄园。"
+      - "&7合并: &f/gs merge <slot>"
+      - "&7取消: &f/gs unmerge [slot]"
+      - "&7命令层会要求确认。"
+    action: ""
+
+  text:
+    index: 30
+    material: OAK_SIGN
+    name: "&f展示文本"
+    lore:
+      - "&8描述、公告和展示文本。"
+      - "&7描述: &f/gs desc <内容>"
+      - "&7公告: &f/gs bulletin set <内容>"
+      - "&7查看公告: &f/gs bulletin show"
+      - "&7清空公告: &f/gs bulletin clear"
+    action: ""
+
+  safety:
+    index: 31
+    material: REDSTONE_TORCH
+    name: "&c确认机制"
+    lore:
+      - "&7以下命令会进入确认队列:"
+      - "&8clear / move / swap / merge / unmerge"
+      - ""
+      - "&7确认方式: &f/gs confirm"
+      - "&8或重复执行同一个命令。"
+    action: ""
+
+  back:
+    index: 45
+    material: ARROW
+    name: "&e返回护理页"
+    lore:
+      - "&7回到美化与护理。"
+    action: "menu.controller.care"
+
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭维护与迁移页。"
+    action: "close"

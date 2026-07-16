@@ -126,6 +126,11 @@ public final class GuildService {
     public ManorMover getManorMover() { return manorMover; }
     public java.util.List<String> getLastMoveModResults() { return lastMoveModResults; }
 
+    /** 当前公会等级可容纳的成员庄园数量；未知公会返回 0。 */
+    public int memberCapacity(GuildId guild) {
+        return guilds.find(guild).map(gw -> levels.maxMembers(gw.guildLevel())).orElse(0);
+    }
+
     /** 注册成员变更回调（Bukkit 适配层注入，供缓存同步用）。 */
     public void setMembershipListener(MembershipChangeListener listener) {
         this.membershipListener = listener;
@@ -346,6 +351,7 @@ public final class GuildService {
                     new ChunkRegion(worldChunkX, worldChunkZ, worldChunkX, worldChunkZ), prepMode, true);
         }
         lastCityUnlockResult = UnlockResult.SUCCESS;
+        events.onCityChunkUnlocked(guild, worldChunkX, worldChunkZ);
         return updated;
     }
 

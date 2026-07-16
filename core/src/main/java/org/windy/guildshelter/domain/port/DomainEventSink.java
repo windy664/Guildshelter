@@ -23,6 +23,8 @@ public interface DomainEventSink {
     /** 玩家解锁了一个 chunk（unlockChunk 成功）。坐标为世界 chunk 坐标。 */
     default void onChunkUnlocked(GuildId guild, int slot, int worldChunkX, int worldChunkZ, UUID player) {}
 
+    default void onCityChunkUnlocked(GuildId guild, int worldChunkX, int worldChunkZ) {}
+
     /** 庄园升级（upgradeManor 成功）。 */
     default void onManorUpgraded(GuildId guild, int slot, int oldLevel, int newLevel, UUID owner) {}
 

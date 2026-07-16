@@ -1,4 +1,4 @@
-package org.windy.guildshelter.adapter.bukkit.gui;
+﻿package org.windy.guildshelter.adapter.bukkit.gui;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -34,9 +34,21 @@ public final class YamlGuiLoader {
             "controller/manor_controller",
             "controller/controller_info",
             "controller/controller_upgrade",
+            "controller/controller_quick",
             "controller/controller_care",
+            "controller/controller_maintenance",
+            "controller/controller_limits",
             "controller/controller_security",
-            "controller/controller_activity"
+            "controller/controller_flags",
+            "controller/controller_members",
+            "controller/controller_member_ops",
+            "controller/controller_activity",
+            "controller/controller_activity_board",
+            "controller/controller_activity_rate",
+            "camp/camp_manager",
+            "camp/camp_spawn",
+            "camp/camp_city",
+            "camp/camp_social"
     };
 
     private final YamlConfiguration config;
@@ -233,6 +245,12 @@ public final class YamlGuiLoader {
         LevelRules levels = context.get("levels") instanceof LevelRules l ? l : null;
 
         Map<String, String> values = new HashMap<>();
+        for (Map.Entry<String, Object> entry : context.entrySet()) {
+            Object value = entry.getValue();
+            if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+                values.put(entry.getKey(), String.valueOf(value));
+            }
+        }
         if (manor != null) {
             values.put("slot", String.valueOf(manor.slot()));
             values.put("level", String.valueOf(manor.level()));
@@ -294,8 +312,9 @@ public final class YamlGuiLoader {
     }
 
     private File menuFile(String menuId) {
-        File nested = controllerMenu(menuId)
-                ? new File(new File(guiDir, "controller"), menuId + ".yml")
+        String category = menuCategory(menuId);
+        File nested = category != null
+                ? new File(new File(guiDir, category), menuId + ".yml")
                 : new File(guiDir, menuId + ".yml");
         if (nested.exists()) {
             return nested;
@@ -314,6 +333,16 @@ public final class YamlGuiLoader {
 
     private static boolean controllerMenu(String menuId) {
         return "manor_controller".equals(menuId) || menuId.startsWith("controller_");
+    }
+
+    private static String menuCategory(String menuId) {
+        if (controllerMenu(menuId)) {
+            return "controller";
+        }
+        if (menuId.startsWith("camp_")) {
+            return "camp";
+        }
+        return null;
     }
 
     /** 检查某菜单是否在 gui.yml 中定义。 */

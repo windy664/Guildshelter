@@ -1,0 +1,72 @@
+title: "&0庄园控制器 - 留言墙"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: OAK_SIGN
+    name: "&a留言墙"
+    lore:
+      - "&7最近留言: &f{comment_count}"
+      - "&7最新: &f{comment_preview_1}"
+      - ""
+      - "&8这里展示当前庄园最近的访客留言。"
+    action: ""
+  c1:
+    index: 20
+    material: PAPER
+    name: "&f1"
+    lore:
+      - "&7{comment_preview_1}"
+    action: ""
+  c2:
+    index: 21
+    material: PAPER
+    name: "&f2"
+    lore:
+      - "&7{comment_preview_2}"
+    action: ""
+  c3:
+    index: 22
+    material: PAPER
+    name: "&f3"
+    lore:
+      - "&7{comment_preview_3}"
+    action: ""
+  c4:
+    index: 23
+    material: PAPER
+    name: "&f4"
+    lore:
+      - "&7{comment_preview_4}"
+    action: ""
+  c5:
+    index: 24
+    material: PAPER
+    name: "&f5"
+    lore:
+      - "&7{comment_preview_5}"
+    action: ""
+  tip:
+    index: 31
+    material: BOOK
+    name: "&e去留言"
+    lore:
+      - "&7留言仍需文本输入。"
+      - "&8请用 /gs comment <留言>。"
+    action: ""
+  back:
+    index: 33
+    material: BOOK
+    name: "&e返回活动页"
+    lore:
+      - "&7回到活动总览。"
+    action: "menu.controller.activity"
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭庄园控制器。"
+    action: "close"

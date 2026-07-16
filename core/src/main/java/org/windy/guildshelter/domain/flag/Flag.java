@@ -39,6 +39,7 @@ public enum Flag {
     CONTAINER("container", FlagType.BOOLEAN, "false", "访客是否可打开箱子/熔炉/漏斗/酿造台等带库存方块"),
     ITEM_FRAME("item-frame", FlagType.BOOLEAN, "false", "访客是否可与展示框/盔甲架交互(旋转·取放·破坏)"),
     VEHICLE_USE("vehicle-use", FlagType.BOOLEAN, "false", "访客是否可乘坐/破坏船与矿车(放置走方块保护)"),
+    FAKE_PLAYER("fake-player", FlagType.BOOLEAN, "true", "flag.fake-player.description"),
 
     // --- 方块环境组(默认 true=保持原版,设 false 即冻结该机制)---
     REDSTONE("redstone", FlagType.BOOLEAN, "true", "红石是否工作"),
