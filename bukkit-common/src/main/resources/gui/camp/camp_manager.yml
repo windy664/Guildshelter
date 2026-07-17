@@ -1,0 +1,36 @@
+title: "&0营地服务台 - 总览"
+size: 54
+items:
+  spawn_menu:
+    slot: 20
+    material: COMPASS
+    name: "&b传送点设置"
+    lore:
+      - "&7管理营地成员和访客的传送坐标。"
+      - ""
+      - "&a▶ 点击进入"
+    action: "menu.camp.spawn"
+  city_menu:
+    slot: 22
+    material: GRASS_BLOCK
+    name: "&a主城与地块"
+    lore:
+      - "&7管理主城解锁与子地块规划。"
+      - "&7当前已解锁: &f{city_unlocked} &7/ &f{city_quota}"
+      - ""
+      - "&a▶ 点击进入"
+    action: "menu.camp.city"
+  social_menu:
+    slot: 24
+    material: OAK_SIGN
+    name: "&e展示与日志"
+    lore:
+      - "&7悬浮字、迎送语及审计日志管理。"
+      - ""
+      - "&a▶ 点击进入"
+    action: "menu.camp.social"
+  close:
+    slot: 49
+    material: BARRIER
+    name: "&c关闭"
+    action: "close"

@@ -881,4 +881,65 @@ public final class Menus {
                 List.of("§7关闭当前控制器界面。", "§8已确认的命令不会被撤销。"),
                 "close"));
     }
+
+    public static UiView campManager(GuildWorld gw, LevelRules levels, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("guildWorld", gw);
+        ctx.put("levels", levels);
+        UiView yaml = fromYaml("camp_manager", ctx);
+        if (yaml != null) return yaml;
+
+        Map<Integer, UiItem> items = framed();
+        items.put(4, UiItem.of(UiIcon.of("lectern"), "§6§l营地服务台", List.of("§7公会: §f" + gw.guild().value()), ""));
+        items.put(20, UiItem.of(UiIcon.of("compass"), "§b传送点设置", List.of("§7管理营地成员和访客的传送坐标。"), "menu.camp.spawn"));
+        items.put(22, UiItem.of(UiIcon.of("map"), "§a主城与地块", List.of("§7管理主城解锁与子地块规划。"), "menu.camp.city"));
+        items.put(24, UiItem.of(UiIcon.of("book"), "§e展示与日志", List.of("§7悬浮字、迎送语及审计日志管理。"), "menu.camp.social"));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("camp_manager", "§8[§6营地服务台§8] §7总览", 6, items, ctx);
+    }
+
+    public static UiView campSpawn(GuildWorld gw, LevelRules levels, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("guildWorld", gw);
+        ctx.put("levels", levels);
+        UiView yaml = fromYaml("camp_spawn", ctx);
+        if (yaml != null) return yaml;
+
+        Map<Integer, UiItem> items = framed();
+        items.put(21, UiItem.of(UiIcon.of("ender_pearl"), "§b成员传送点", List.of("§e点击将当前脚下设为成员点"), "command.setspawn.member"));
+        items.put(23, UiItem.of(UiIcon.of("magma_cream"), "§6访客传送点", List.of("§e点击将当前脚下设为访客点"), "command.setspawn.visitor"));
+        items.put(45, UiItem.of(UiIcon.of("arrow"), "§e返回上一页", "menu.camp"));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("camp_spawn", "§8[§6营地服务台§8] §7传送点设置", 6, items, ctx);
+    }
+
+    public static UiView campCity(GuildWorld gw, LevelRules levels, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("guildWorld", gw);
+        ctx.put("levels", levels);
+        UiView yaml = fromYaml("camp_city", ctx);
+        if (yaml != null) return yaml;
+
+        Map<Integer, UiItem> items = framed();
+        items.put(21, UiItem.of(UiIcon.of("golden_shovel"), "§e解锁主城区块", List.of("§e点击解锁脚下区块"), "command.cityunlock"));
+        items.put(23, UiItem.of(UiIcon.of("oak_fence"), "§6主城子地块列表", List.of("§e点击列出当前地块列表"), "command.cityplot.list"));
+        items.put(45, UiItem.of(UiIcon.of("arrow"), "§e返回上一页", "menu.camp"));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("camp_city", "§8[§6营地服务台§8] §7主城与地块", 6, items, ctx);
+    }
+
+    public static UiView campSocial(GuildWorld gw, LevelRules levels, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("guildWorld", gw);
+        ctx.put("levels", levels);
+        UiView yaml = fromYaml("camp_social", ctx);
+        if (yaml != null) return yaml;
+
+        Map<Integer, UiItem> items = framed();
+        items.put(20, UiItem.of(UiIcon.of("name_tag"), "§b主城悬浮字列表", List.of("§e点击查看已有悬浮字列表"), "command.holo.list"));
+        items.put(24, UiItem.of(UiIcon.of("book"), "§6打印审计日志", List.of("§e点击在聊天框打印最新日志"), "command.log"));
+        items.put(45, UiItem.of(UiIcon.of("arrow"), "§e返回上一页", "menu.camp"));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("camp_social", "§8[§6营地服务台§8] §7展示与日志", 6, items, ctx);
+    }
 }

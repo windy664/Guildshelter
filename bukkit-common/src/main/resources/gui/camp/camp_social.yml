@@ -1,0 +1,43 @@
+title: "&0营地服务台 - 展示"
+size: 54
+items:
+  hologram:
+    slot: 20
+    material: NAME_TAG
+    name: "&b主城悬浮字"
+    lore:
+      - "&7在主城内添加悬浮标语。"
+      - "&7状态: &f{holo_status} &7(&f{holo_count}&7/&f{holo_limit}&7)"
+      - ""
+      - "&8(添加需输入文字，请使用指令)"
+      - "&8用法: /gs holo add <文字>"
+      - ""
+      - "&a▶ 点击查看已有悬浮字列表"
+    action: "command.holo.list"
+  greeting:
+    slot: 22
+    material: PAPER
+    name: "&e领地迎送语"
+    lore:
+      - "&7玩家进出公会世界时的提示文本。"
+      - "&7欢迎语: &f{greeting_status}"
+      - "&7告别语: &f{farewell_status}"
+      - ""
+      - "&8(配置需输入文字，请使用指令)"
+      - "&8用法: /gs greeting set <文字>"
+    action: ""
+  audit_log:
+    slot: 24
+    material: BOOK
+    name: "&6审计日志"
+    lore:
+      - "&7记录公会领地内的高危/管理操作。"
+      - "&7模块状态: &f{audit_status}"
+      - ""
+      - "&a▶ 点击在聊天框打印最新日志"
+    action: "command.log"
+  back:
+    slot: 49
+    material: ARROW
+    name: "&a返回上一页"
+    action: "menu.camp"

@@ -1,0 +1,31 @@
+title: "&0营地服务台 - 主城"
+size: 54
+items:
+  city_unlock:
+    slot: 21
+    material: GOLDEN_SHOVEL
+    name: "&e解锁主城区块"
+    lore:
+      - "&7用公会额度解锁脚下的主城区块。"
+      - "&7剩余可用额度: &f{city_remaining}"
+      - ""
+      - "&a▶ 点击解锁脚下区块"
+    action: "command.cityunlock"
+  city_plot:
+    slot: 23
+    material: OAK_FENCE
+    name: "&6主城子地块 (CityPlot)"
+    lore:
+      - "&7将已解锁的主城区块划给成员开店。"
+      - "&7状态: &f{cityplot_status} &7(&f{cityplot_count}&7/&f{cityplot_limit}&7)"
+      - ""
+      - "&8(该功能需参数，请在聊天框输入)"
+      - "&8用法: /gs cityplot <define|assign|...>"
+      - ""
+      - "&a▶ 点击列出当前地块列表"
+    action: "command.cityplot.list"
+  back:
+    slot: 49
+    material: ARROW
+    name: "&a返回上一页"
+    action: "menu.camp"
