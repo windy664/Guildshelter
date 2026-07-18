@@ -942,4 +942,62 @@ public final class Menus {
         items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
         return new UiView("camp_social", "§8[§6营地服务台§8] §7展示与日志", 6, items, ctx);
     }
+
+    /** 庄园门牌 GUI（/gs card 打开）。YAML 优先，硬编码兜底。 */
+    public static UiView manorCard(Manor manor, GuildWorld gw, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("manor", manor);
+        ctx.put("guildWorld", gw);
+        UiView yaml = fromYaml("manor_card", ctx);
+        if (yaml != null) return yaml;
+
+        // 硬编码兜底
+        Map<Integer, UiItem> items = framed();
+        items.put(4, UiItem.of(UiIcon.of("lectern"), "§6§l庄园门牌",
+                List.of("§7公会: §f" + manor.guild().value(),
+                        "§7庄园: §f#" + manor.slot() + " §8| §7Lv§f" + manor.level() + "/" + ctx.getOrDefault("max_level", "?"),
+                        "§7庄主: §f" + ctx.getOrDefault("owner_name", "?"),
+                        "§7状态: §f" + ctx.getOrDefault("done_status", "?")),
+                ""));
+        items.put(11, UiItem.of(UiIcon.of("map"), "§e基本资料",
+                List.of("§7地块: §f" + ctx.getOrDefault("side", "?") + "x" + ctx.getOrDefault("side", "?") + " chunk",
+                        "§7已解锁: §f" + manor.unlockedChunks().size() + " chunk"),
+                ""));
+        items.put(13, UiItem.of(UiIcon.of("armor_stand"), "§b实体统计",
+                List.of("§f" + ctx.getOrDefault("entity_line", "§8(世界未加载)")),
+                ""));
+        items.put(15, UiItem.of(UiIcon.of("player_head"), "§a成员",
+                List.of("§7共建人: §f" + manor.coBuilders().size(),
+                        "§7黑名单: §c" + manor.denied().size()),
+                ""));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("manor_card", "§8[§6庄园门牌§8]", 6, items, ctx);
+    }
+
+    /** 留言板 GUI（/gs board 打开）。YAML 优先，硬编码兜底。 */
+    public static UiView boardView(GuildWorld gw, Map<String, Object> values) {
+        Map<String, Object> ctx = new HashMap<>(values);
+        ctx.put("guildWorld", gw);
+        UiView yaml = fromYaml("board", ctx);
+        if (yaml != null) return yaml;
+
+        // 硬编码兜底
+        Map<Integer, UiItem> items = framed();
+        items.put(4, UiItem.of(UiIcon.of("oak_sign"), "§a留言墙",
+                List.of("§7最近留言: §f" + ctx.getOrDefault("comment_count", "0")),
+                ""));
+        // 动态填充留言到 slot 10-16, 19-21
+        int[] slots = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21};
+        for (int i = 0; i < slots.length; i++) {
+            String preview = (String) ctx.getOrDefault("comment_preview_" + (i + 1), null);
+            if (preview != null) {
+                items.put(slots[i], UiItem.of(UiIcon.of("paper"), "§f留言 " + (i + 1),
+                        List.of("§7" + preview), ""));
+            }
+        }
+        items.put(31, UiItem.of(UiIcon.of("book"), "§e去留言",
+                List.of("§7留言需要文本输入。", "§8请用 §f/gs comment <留言>§8。"), ""));
+        items.put(49, UiItem.of(UiIcon.of("barrier"), "§c关闭", "close"));
+        return new UiView("board", "§8[§6留言板§8]", 6, items, ctx);
+    }
 }

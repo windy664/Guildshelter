@@ -1,0 +1,116 @@
+# ============================================================
+# 留言板 - 独立页面
+# ============================================================
+# /gs board 命令打开，展示脚下庄园的访客留言。
+# 从控制器活动页也可进入（menu.controller.activity.board）。
+#
+# 可用占位符：
+#   {guild} {slot} {alias}
+#   {comment_count}
+#   {comment_preview_1} ~ {comment_preview_10}
+
+title: "&0留言板"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: OAK_SIGN
+    name: "&a留言墙"
+    lore:
+      - "&7庄园: &f{alias} &8(#{slot})"
+      - "&7最近留言: &f{comment_count}"
+      - ""
+      - "&8访客给这座庄园留下的文字反馈。"
+    action: ""
+
+  c1:
+    index: 10
+    material: PAPER
+    name: "&f留言 1"
+    lore:
+      - "&7{comment_preview_1}"
+    action: ""
+  c2:
+    index: 11
+    material: PAPER
+    name: "&f留言 2"
+    lore:
+      - "&7{comment_preview_2}"
+    action: ""
+  c3:
+    index: 12
+    material: PAPER
+    name: "&f留言 3"
+    lore:
+      - "&7{comment_preview_3}"
+    action: ""
+  c4:
+    index: 13
+    material: PAPER
+    name: "&f留言 4"
+    lore:
+      - "&7{comment_preview_4}"
+    action: ""
+  c5:
+    index: 14
+    material: PAPER
+    name: "&f留言 5"
+    lore:
+      - "&7{comment_preview_5}"
+    action: ""
+  c6:
+    index: 15
+    material: PAPER
+    name: "&f留言 6"
+    lore:
+      - "&7{comment_preview_6}"
+    action: ""
+  c7:
+    index: 16
+    material: PAPER
+    name: "&f留言 7"
+    lore:
+      - "&7{comment_preview_7}"
+    action: ""
+  c8:
+    index: 19
+    material: PAPER
+    name: "&f留言 8"
+    lore:
+      - "&7{comment_preview_8}"
+    action: ""
+  c9:
+    index: 20
+    material: PAPER
+    name: "&f留言 9"
+    lore:
+      - "&7{comment_preview_9}"
+    action: ""
+  c10:
+    index: 21
+    material: PAPER
+    name: "&f留言 10"
+    lore:
+      - "&7{comment_preview_10}"
+    action: ""
+
+  tip:
+    index: 31
+    material: BOOK
+    name: "&e去留言"
+    lore:
+      - "&7留言需要文本输入。"
+      - "&8请用 &f/gs comment <留言>&8。"
+      - ""
+      - "&8站在目标庄园上执行即可。"
+    action: ""
+
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭留言板。"
+    action: "close"

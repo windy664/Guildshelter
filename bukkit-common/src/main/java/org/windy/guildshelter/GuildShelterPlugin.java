@@ -33,7 +33,12 @@ import org.windy.guildshelter.adapter.bukkit.ManorLookup;
 import org.windy.guildshelter.adapter.bukkit.VisitCounter;
 import org.windy.guildshelter.adapter.bukkit.MergeRegistry;
 import org.windy.guildshelter.adapter.bukkit.VaultEconomy;
-import org.windy.guildshelter.adapter.bukkit.command.GsCommand;
+import org.windy.guildshelter.adapter.bukkit.command.CommandContext;
+import org.windy.guildshelter.adapter.bukkit.command.CommandRegistry;
+import org.windy.guildshelter.adapter.bukkit.command.UiActionRegistrar;
+import org.windy.guildshelter.adapter.bukkit.command.player.*;
+import org.windy.guildshelter.adapter.bukkit.command.manor.*;
+import org.windy.guildshelter.adapter.bukkit.command.admin.*;
 import org.windy.guildshelter.adapter.bukkit.listener.ManorAccessListener;
 import org.windy.guildshelter.adapter.bukkit.listener.GuildMotdListener;
 import org.windy.guildshelter.adapter.bukkit.listener.ManorCapListener;
@@ -426,20 +431,27 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         service.setDeferredPrep(deferredCityPrep);
         getServer().getPluginManager().registerEvents(deferredCityPrep, this);
 
-        GsCommand command = new GsCommand(worldManager, guilds, manors, service, registry,
+        CommandContext cmdCtx = new CommandContext(worldManager, guilds, manors, service, registry,
                 config.levels(), entityCensus, this.mergeRegistry, proxyChannel, config.serverName(), getLogger(), this);
-        command.setGuildProvider(guildProvider);
-        command.setCampSpawnStore(storage.campSpawn()); // 营地成员/访客传送点
-        command.setCityFlagCache(cityFlagCache); // 主城 flag（会长/副会长可设）
-        command.setAuditLog(this.auditLog); // 领地审计（/gs log；关闭时为空操作实例）
-        command.setCityPlots(cityPlotCache, cityPlotsEnabled,
-                getConfig().getInt("city-plots.max-per-guild", 16)); // 主城子地块（/gs cityplot）
-        command.setHolograms(holoBackend, holoStore, config.holograms().enabled(), config.holograms().maxPerGuild(),
-                config.holograms().papiWhitelist());
+        cmdCtx.guildProvider = guildProvider;
+        cmdCtx.campSpawn = storage.campSpawn();
+        cmdCtx.cityFlagCache = cityFlagCache;
+        cmdCtx.auditLog = this.auditLog;
+        cmdCtx.cityPlotCache = cityPlotCache;
+        cmdCtx.cityPlotsEnabled = cityPlotsEnabled;
+        cmdCtx.cityPlotsMaxPerGuild = getConfig().getInt("city-plots.max-per-guild", 16);
+        cmdCtx.holoBackend = holoBackend;
+        cmdCtx.holoStore = holoStore;
+        cmdCtx.holoEnabled = config.holograms().enabled();
+        cmdCtx.holoMaxPerGuild = config.holograms().maxPerGuild();
+        cmdCtx.holoPapiWhitelist = org.windy.guildshelter.adapter.bukkit.BlockMatcher.of(config.holograms().papiWhitelist());
+        CommandRegistry cmdRegistry = new CommandRegistry(cmdCtx);
+        // 注册所有子命令（见 command/player/, command/manor/, command/admin/）
+        registerSubCommands(cmdRegistry, cmdCtx);
         PluginCommand gs = getCommand("gs");
         if (gs != null) {
-            gs.setExecutor(command);
-            gs.setTabCompleter(command);
+            gs.setExecutor(cmdRegistry);
+            gs.setTabCompleter(cmdRegistry);
         }
 
         for (GuildWorld gw : guilds.findAll()) {
@@ -512,8 +524,8 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
 
         ManorAccessListener accessListener = new ManorAccessListener(lookup, economy, visitCounter, this.worldCache);
         getServer().getPluginManager().registerEvents(accessListener, this);
-        command.setAccessListener(accessListener);
-        accessListener.setOpenPlots(command.openPlots());
+        cmdCtx.accessListener = accessListener;
+        accessListener.setOpenPlots(cmdCtx.openPlots);
 
         getServer().getPluginManager().registerEvents(new ManorCommandListener(lookup), this);
         getServer().getPluginManager().registerEvents(new Listener() {
@@ -570,7 +582,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         this.uiBackend = useMod ? modUi : bukkitUi;
         getServer().getPluginManager().registerEvents(new VanillaGuiListener(bukkitUi), this);
         this.guiLoader = new YamlGuiLoader(getDataFolder(), getLogger());
-        command.registerUiActions(this.uiRouter);
+        new UiActionRegistrar(cmdCtx).register(this.uiRouter);
         getLogger().info("UI 后端: " + this.uiBackend.getClass().getSimpleName()
                 + (this.uiBackend == modUi ? "（模组联动）" : "（原版 Inventory 兜底；模组联动 UI 预留中）"));
 
@@ -637,7 +649,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
 
         SchematicStore schematicStore = SchematicStores.autoDetect(getDataFolder().toPath(), this);
         if (schematicStore != null) {
-            command.setSchematicStore(schematicStore);
+            cmdCtx.schematicStore = schematicStore;
             getLogger().info("Schematic 模板已启用（" + schematicStore.getClass().getSimpleName() + "）");
         } else {
             getLogger().info("未检测到 WorldEdit/FAWE，Schematic 模板未启用。");
@@ -665,7 +677,7 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
                     new org.windy.guildshelter.adapter.bukkit.map.MapClaimChannel(
                             registry, guilds, manors, service, this, getLogger());
             mapChannel.register();
-            command.setMapChannel(mapChannel);
+            cmdCtx.mapChannel = mapChannel;
             getLogger().warning("[GuildShelter] map.builtin-xaero-bridge is deprecated; install GuildShelterXaeroMap instead.");
         }
 
@@ -754,5 +766,89 @@ public abstract class GuildShelterPlugin extends JavaPlugin {
         }
         getLogger().info("GuildShelter 已禁用。");
         instance = null;
+    }
+
+    /** 注册所有 /gs 子命令到 CommandRegistry。 */
+    private void registerSubCommands(CommandRegistry registry, CommandContext ctx) {
+        // ── player/ ──
+        registry.register(new HomeCommand());
+        registry.register(new SpawnCommand());
+        registry.register(new SetHomeCommand());
+        registry.register(new DoneCommand());
+        registry.register(new MiddleCommand());
+        registry.register(new NearCommand());
+        registry.register(new InboxCommand());
+        registry.register(new BoardCommand());
+        registry.register(new GiftCommand());
+        registry.register(new LogCommand());
+        registry.register(new ControllerCommand());
+        registry.register(new GuiCommand());
+        registry.register(new CampCommand());
+        registry.register(new HelpCommand());
+        registry.register(new ConfirmCommand());
+        registry.register(new TrustCommand());
+        registry.register(new UntrustCommand());
+        registry.register(new MemberCommand());
+        registry.register(new DenyCommand());
+        registry.register(new UndenyCommand());
+        registry.register(new KickCommand());
+        registry.register(new CardCommand());
+        registry.register(new AliasCommand());
+        registry.register(new DescCommand());
+        registry.register(new ToggleCommand());
+        registry.register(new CommentCommand());
+        registry.register(new RateCommand());
+        registry.register(new FlowerCommand());
+        registry.register(new ListCommand());
+        registry.register(new VisitCommand());
+        registry.register(new ClearCommand());
+        registry.register(new InfoCommand());
+        registry.register(new SwapCommand());
+        registry.register(new GrantCommand());
+        registry.register(new TopCommand());
+        registry.register(new OpenPlotCommand());
+        registry.register(new ClosePlotCommand());
+        registry.register(new ManorsCommand());
+        registry.register(new UpgradeCommand());
+        // ── manor/ ──
+        registry.register(new FlagCommand());
+        registry.register(new UnlockCommand());
+        registry.register(new CityUnlockCommand());
+        registry.register(new ClaimSelfCommand());
+        registry.register(new SetSpawnCommand());
+        registry.register(new GreetingCommand());
+        registry.register(new CreateCampCommand());
+        registry.register(new TemplateCommand());
+        registry.register(new SubCommandCmd());
+        registry.register(new BulletinCommand());
+        registry.register(new MergeCommand());
+        registry.register(new UnmergeCommand());
+        registry.register(new MoveCommand());
+        registry.register(new CityTrustCommand());
+        registry.register(new CityPlotCommand());
+        registry.register(new HoloCommand());
+        // ── admin/ ──
+        registry.register(new AdminCreateCommand());
+        registry.register(new AdminTpCommand());
+        registry.register(new AdminClaimCommand());
+        registry.register(new AdminFillCommand());
+        registry.register(new AdminMapCommand());
+        registry.register(new AdminUpgradeManorCommand());
+        registry.register(new AdminUpgradeGuildCommand());
+        registry.register(new AdminDeleteCommand());
+        registry.register(new AdminWorldsCommand());
+        registry.register(new AdminWhereamiCommand());
+        registry.register(new AdminReloadCommand());
+        registry.register(new AdminSetOwnerCommand());
+        registry.register(new AdminPurgeCommand());
+        registry.register(new AdminRegenCommand());
+        registry.register(new AdminExportCommand());
+        registry.register(new AdminFundCommand());
+        registry.register(new AdminCitywallCommand());
+        registry.register(new AdminRoadPermitCommand());
+        registry.register(new AdminQuotaCommand());
+        registry.register(new AdminLimitCommand());
+        registry.register(new AdminLogCommand());
+        registry.register(new AdminRoadsCommand());
     }
 }

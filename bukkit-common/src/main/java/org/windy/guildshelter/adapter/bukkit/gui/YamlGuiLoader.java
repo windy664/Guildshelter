@@ -1,4 +1,4 @@
-﻿package org.windy.guildshelter.adapter.bukkit.gui;
+package org.windy.guildshelter.adapter.bukkit.gui;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -48,7 +48,9 @@ public final class YamlGuiLoader {
             "camp/camp_manager",
             "camp/camp_spawn",
             "camp/camp_city",
-            "camp/camp_social"
+            "camp/camp_social",
+            "card/manor_card",
+            "social/board"
     };
 
     private final YamlConfiguration config;
@@ -341,6 +343,12 @@ public final class YamlGuiLoader {
         }
         if (menuId.startsWith("camp_")) {
             return "camp";
+        }
+        if ("manor_card".equals(menuId)) {
+            return "card";
+        }
+        if ("board".equals(menuId)) {
+            return "social";
         }
         return null;
     }

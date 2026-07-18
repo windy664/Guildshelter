@@ -1,0 +1,106 @@
+# ============================================================
+# 庄园门牌 - 独立展示页面
+# ============================================================
+# /gs card 命令打开，展示庄园档案卡信息。
+# 不从控制器进入，是独立的展示页面。
+#
+# 可用占位符：
+#   {guild} {slot} {level} {max_level} {owner_name}
+#   {unlocked} {quota} {side} {done_status}
+#   {alias} {description}
+#   {entity_line} {member_count} {capacity}
+#   {trusted_count} {denied_count} {flag_count}
+#   {rating_avg} {rating_count} {score}
+
+title: "&0庄园门牌 #{slot}"
+size: 54
+pane-material: GRAY_STAINED_GLASS_PANE
+
+items:
+  header:
+    index: 4
+    material: LECTERN
+    name: "&6&l庄园门牌"
+    lore:
+      - "&7公会: &f{guild}"
+      - "&7庄园: &f#{slot} &8| &7Lv&f{level}/{max_level}"
+      - "&7庄主: &f{owner_name}"
+      - "&7状态: &f{done_status}"
+      - ""
+      - "&8这是庄园的公开档案卡。"
+    action: ""
+
+  info:
+    index: 11
+    material: MAP
+    name: "&e基本资料"
+    lore:
+      - "&7地块: &f{side}x{side} chunk"
+      - "&7已解锁: &f{unlocked}&7/&f{quota} chunk"
+      - "&7公会等级: &f{guild}"
+      - ""
+      - "&8庄园的物理尺寸和建设额度。"
+    action: ""
+
+  entities:
+    index: 13
+    material: ARMOR_STAND
+    name: "&b实体统计"
+    lore:
+      - "&f{entity_line}"
+      - ""
+      - "&8当前庄园内的生物和载具数量。"
+      - "&8接近限额时建造会受限。"
+    action: ""
+
+  members:
+    index: 15
+    material: PLAYER_HEAD
+    name: "&a成员"
+    lore:
+      - "&7共建人: &f{trusted_count}"
+      - "&7成员: &f{member_count}&7/&f{capacity}"
+      - "&7黑名单: &c{denied_count}"
+      - ""
+      - "&8庄园的协作与访问关系。"
+    action: ""
+
+  flags:
+    index: 29
+    material: SHIELD
+    name: "&c保护设置"
+    lore:
+      - "&7自定义 Flag: &f{flag_count} &7个"
+      - ""
+      - "&8庄园的 PvP、交互、访客等保护开关。"
+    action: ""
+
+  rating:
+    index: 33
+    material: NETHER_STAR
+    name: "&e评分"
+    lore:
+      - "&7平均分: &f{rating_avg} &8({rating_count} 票)"
+      - "&7综合分: &f{score}"
+      - ""
+      - "&8庄园的社交评分和人气指标。"
+    action: ""
+
+  alias_card:
+    index: 22
+    material: NAME_TAG
+    name: "&d{alias}"
+    lore:
+      - "&7庄园别名"
+      - "&f{description}"
+      - ""
+      - "&8庄主设置的庄园名称和简介。"
+    action: ""
+
+  close:
+    index: 49
+    material: BARRIER
+    name: "&c关闭"
+    lore:
+      - "&7关闭门牌。"
+    action: "close"

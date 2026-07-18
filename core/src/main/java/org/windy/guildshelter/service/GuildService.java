@@ -282,7 +282,7 @@ public final class GuildService {
                 () -> creating.remove(guild));
     }
 
-    /** 建会后续（世界已建好后）：初始解锁主城角落 + 存库 + 围墙（道路改为区块按需补铺）。须在主线程。 */
+    /** 建会后续（世界已建好后）：初始解锁主城角落 + 存库 + 铺路 + 围墙。须在主线程。 */
     private GuildWorld finishCreate(GuildId guild, GuildWorld gw) {
         gw = gw.withCityUnlockedChunks(initialCityUnlocked(gw)); // 初始解锁主城角落正方形（会长起点）
         guilds.save(gw);
@@ -291,6 +291,7 @@ public final class GuildService {
             // 玩家首次进入该世界、区块自然加载后再补围墙（道路由 LazyRoadPaver 按区块补铺）。
             deferredPrep.markGuildPending(guild, gw.worldName());
         } else {
+            prepareRoadsWithinBorder(gw); // 铺路网（非惰性世界一次性铺满）
             buildCityWall(gw);            // 围墙（默认关）
         }
         audit(guild, null, "guild_create", guild.value(), "world=" + gw.worldName());

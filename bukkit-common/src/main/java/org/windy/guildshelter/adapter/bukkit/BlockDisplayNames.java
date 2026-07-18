@@ -24,7 +24,7 @@ public final class BlockDisplayNames {
         if (!itemName.isBlank()) {
             return itemName;
         }
-        return prettify(material.getKeyOrThrow().getKey());
+        return prettify(material.getKey().getKey());
     }
 
     private static Material material(String blockId) {
