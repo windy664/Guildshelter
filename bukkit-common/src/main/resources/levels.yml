@@ -13,7 +13,7 @@ manor:
     1:
       unlock-chunks: 36
       limits:
-        tiles: 300
+        tiles: 1000
         drops: 200
         animal: 20
         hostile: 10
@@ -30,7 +30,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 380
+        tiles: 1120
         drops: 230
         animal: 24
         hostile: 12
