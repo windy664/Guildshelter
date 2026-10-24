@@ -189,7 +189,6 @@ public record GuildShelterConfig(LayoutConfig layout, LevelRules levels, Terrain
                 cityInitial,
                 cityMax,
                 plotInitial,                                   // 庄园初始边长
-                0,
                 cfg.getInt("advanced.base-y", 64),
                 cfg.getInt("advanced.margin-chunks", 2));
 

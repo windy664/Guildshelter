@@ -13,7 +13,6 @@ package org.windy.guildshelter.domain.layout;
  * @param mainCityInitialChunks 主城初始<b>解锁额度</b>边长（chunk，1 级公会），∈ [1, mainCityMaxChunks]
  * @param mainCityMaxChunks     主城最大<b>解锁额度</b>边长（chunk，公会满级达到），∈ [initial, plotChunks]；<b>非</b>城territory边界(整格皆主城)
  * @param plotDefaultChunks     庄园初始实占边长（chunk，1 级庄园），≤ plotChunks
- * @param plotChunksPerLevel    庄园每升一级实占边长增加多少 chunk
  * @param baseY                 地面高度（生成器用；放这里方便统一配置）
  * @param marginChunks          世界边界在已分配范围外额外留的余量（chunk）
  */
@@ -23,7 +22,6 @@ public record LayoutConfig(
         int mainCityInitialChunks,
         int mainCityMaxChunks,
         int plotDefaultChunks,
-        int plotChunksPerLevel,
         int baseY,
         int marginChunks
 ) {
@@ -46,9 +44,6 @@ public record LayoutConfig(
         }
         if (plotDefaultChunks < 1 || plotDefaultChunks > plotChunks) {
             throw new IllegalArgumentException("plotDefaultChunks 必须在 [1, plotChunks]");
-        }
-        if (plotChunksPerLevel < 0) {
-            throw new IllegalArgumentException("plotChunksPerLevel 必须 ≥0");
         }
     }
 
@@ -79,6 +74,6 @@ public record LayoutConfig(
      * 主城额度边长上限 15 chunk、庄园初始解锁 6 chunk(96×96)。
      */
     public static LayoutConfig defaults() {
-        return new LayoutConfig(15, 1, 6, 15, 6, 1, 64, 2);
+        return new LayoutConfig(15, 1, 6, 15, 6, 64, 2);
     }
 }

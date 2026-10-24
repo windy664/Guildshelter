@@ -18,7 +18,7 @@ class PermissionRulesTest {
 
     // 固定配置（不跟 defaults() 走）：plot=4, road=1, 主城=中心格 1 chunk → base=1, pitch=5
     private final LayoutCalculator layout =
-            new LayoutCalculator(new LayoutConfig(4, 1, 1, 1, 2, 1, 64, 2));
+            new LayoutCalculator(new LayoutConfig(4, 1, 1, 1, 2, 64, 2));
     private final PermissionRules rules = new PermissionRules();
 
     private final GuildId guild = new GuildId("g1");

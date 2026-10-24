@@ -121,6 +121,7 @@ permissions:
   guildshelter.command.farewell: { default: true }
   guildshelter.command.log: { default: true }
   guildshelter.command.cityplot: { default: true }
+  guildshelter.command.camp: { default: true }
   guildshelter.command.createcamp: { default: true }
   guildshelter.command.controller: { default: true }
   guildshelter.command.gui: { default: true }

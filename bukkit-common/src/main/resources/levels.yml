@@ -47,7 +47,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 460
+        tiles: 1240
         drops: 260
         animal: 28
         hostile: 14
@@ -64,7 +64,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 540
+        tiles: 1360
         drops: 290
         animal: 32
         hostile: 16
@@ -81,7 +81,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 620
+        tiles: 1480
         drops: 320
         animal: 36
         hostile: 18
@@ -98,7 +98,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 700
+        tiles: 1600
         drops: 350
         animal: 40
         hostile: 20
@@ -115,7 +115,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 780
+        tiles: 1720
         drops: 380
         animal: 44
         hostile: 22
@@ -132,7 +132,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 860
+        tiles: 1840
         drops: 410
         animal: 48
         hostile: 24
@@ -149,7 +149,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 940
+        tiles: 1960
         drops: 440
         animal: 52
         hostile: 26
@@ -166,7 +166,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e10 §f级，进入中期庄园阶段！"
       limits:
-        tiles: 1020
+        tiles: 2080
         drops: 470
         animal: 56
         hostile: 28
@@ -188,7 +188,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1100
+        tiles: 2230
         drops: 500
         animal: 60
         hostile: 30
@@ -205,7 +205,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1180
+        tiles: 2380
         drops: 530
         animal: 64
         hostile: 32
@@ -222,7 +222,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1260
+        tiles: 2530
         drops: 560
         animal: 68
         hostile: 34
@@ -239,7 +239,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1340
+        tiles: 2680
         drops: 590
         animal: 72
         hostile: 36
@@ -256,7 +256,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1420
+        tiles: 2830
         drops: 620
         animal: 76
         hostile: 38
@@ -273,7 +273,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1500
+        tiles: 2980
         drops: 660
         animal: 80
         hostile: 42
@@ -290,7 +290,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1580
+        tiles: 3130
         drops: 700
         animal: 84
         hostile: 46
@@ -307,7 +307,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1660
+        tiles: 3280
         drops: 760
         animal: 90
         hostile: 50
@@ -324,7 +324,7 @@ manor:
         commands:
           - "broadcast §a%player% §f的庄园升级到了 §e%level% §f级！"
       limits:
-        tiles: 1740
+        tiles: 3430
         drops: 830
         animal: 96
         hostile: 55
@@ -341,7 +341,7 @@ manor:
         commands:
           - "broadcast §6%player% §f的庄园已升级到 §e20 §f级，达成满级！"
       limits:
-        tiles: 1820
+        tiles: 3580
         drops: 900
         animal: 100
         hostile: 60

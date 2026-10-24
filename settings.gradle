@@ -23,7 +23,10 @@ include 'guildshelter-api' // 对外扩展 API（纯接口+DTO+事件，自包�
 include 'core'            // domain · service · persistence（平台无关）
 include 'bukkit-common'   // adapter/** · events · 接缝接口+Bukkit默认实现 · 抽象引导（禁 net.neoforged）
 include 'bukkit'          // 普通版：纯 Bukkit 插件 jar
-include 'neoforge_26_2'   // 增强版：混合端(NeoForge 26.2)原生接缝 jar
+// neoforge 载体目录在 .gitignore 里（本地增强版），只在本机存在时纳入构建。
+if (file('neoforge_26_2/build.gradle').exists()) {
+    include 'neoforge_26_2' // 增强版：混合端(NeoForge 26.2)原生接缝 jar
+}
 
 // GuildShelter 客户端 mod 子模块（独立产物，玩家想要地图圈地/领地高亮才装；服务端无需）。
 // 兼容 Xaero 世界地图 与 JourneyMap（任一在场即生效，都可选）。与主插件只靠 guildshelter:map 字节协议对齐。

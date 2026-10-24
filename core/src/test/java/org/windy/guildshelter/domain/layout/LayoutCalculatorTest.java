@@ -12,7 +12,7 @@ class LayoutCalculatorTest {
     // 测试用固定配置（不跟生产默认值走，免得 defaults() 调尺寸时几何断言全废）：
     // P=4, R=1, pitch=5, 主城=中心格(cell 0)角落 2×2 chunk, base=1, 地皮初始实占2 每级+1
     private final LayoutCalculator calc =
-            new LayoutCalculator(new LayoutConfig(4, 1, 2, 2, 2, 1, 64, 2));
+            new LayoutCalculator(new LayoutConfig(4, 1, 2, 2, 2, 64, 2));
 
     @Test
     void centerIsMainCity() {

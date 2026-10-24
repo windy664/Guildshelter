@@ -2,7 +2,8 @@ package org.windy.guildshelter.persistence;
 
 import org.windy.guildshelter.domain.layout.LayoutConfig;
 
-/** LayoutConfig ↔ CSV(8 个整数,逗号分隔,顺序同 record 组件)。JDBC 与平铺文件后端共用。 */
+/** LayoutConfig ↔ CSV(8 个整数,逗号分隔)。JDBC 与平铺文件后端共用。
+ * 第 6 列是历史遗留的 plotChunksPerLevel 占位（该参数已移除），固定写 0、读取跳过，保持旧库兼容。 */
 final class LayoutCsv {
 
     private LayoutCsv() {
@@ -11,7 +12,7 @@ final class LayoutCsv {
     static String toCsv(LayoutConfig l) {
         return l.plotChunks() + "," + l.roadChunks() + ","
                 + l.mainCityInitialChunks() + "," + l.mainCityMaxChunks() + ","
-                + l.plotDefaultChunks() + "," + l.plotChunksPerLevel() + ","
+                + l.plotDefaultChunks() + ",0,"
                 + l.baseY() + "," + l.marginChunks();
     }
 
@@ -25,7 +26,7 @@ final class LayoutCsv {
             return new LayoutConfig(
                     Integer.parseInt(p[0].trim()), Integer.parseInt(p[1].trim()),
                     Integer.parseInt(p[2].trim()), Integer.parseInt(p[3].trim()),
-                    Integer.parseInt(p[4].trim()), Integer.parseInt(p[5].trim()),
+                    Integer.parseInt(p[4].trim()),
                     Integer.parseInt(p[6].trim()), Integer.parseInt(p[7].trim()));
         } catch (RuntimeException e) {
             return fallback;
