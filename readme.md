@@ -1,4 +1,14 @@
+<div align="center">
+
+<img src="assets/banner.svg" alt="Guildshelter" width="100%">
+
+</div>
+
 # GuildShelter 公会营地
+
+![Platform](https://img.shields.io/badge/Platform-Paper%20%2F%20Spigot-62bda8?style=flat-square&logo=minecraft&logoColor=white)
+![Minecraft](https://img.shields.io/badge/MC-1.21.x-8a9a5b?style=flat-square)
+![Addons](https://img.shields.io/badge/Addons-farm%20·%20horde%20·%20xaero--map-e2b90f?style=flat-square)
 
 GuildShelter 是一套给 Minecraft 服务器使用的“公会营地 / 庄园地皮”系统。
 
